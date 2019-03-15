@@ -13,7 +13,41 @@
     </url>
   
     <url>
+      <loc>http://vonzhou.com/2019/hbase-page/</loc>
+      
+      <lastmod>2019-03-14T00:00:00+00:00</lastmod>
+      
+      
+      
+      
+    </url>
+  
+    <url>
       <loc>http://vonzhou.com/categories/</loc>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/tags/hbase/</loc>
+      
+      <lastmod>2019-03-14T00:00:00+00:00</lastmod>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/tags/java/</loc>
+      
+      <lastmod>2019-03-14T00:00:00+00:00</lastmod>
       
       
       
@@ -37,6 +71,8 @@
     <url>
       <loc>http://vonzhou.com/tags/</loc>
       
+      <lastmod>2019-03-14T00:00:00+00:00</lastmod>
+      
       
       
       <priority>0</priority>
@@ -48,6 +84,18 @@
       <loc>http://vonzhou.com/categories/%E5%85%B6%E4%BB%96/</loc>
       
       <lastmod>2019-03-15T11:03:31+08:00</lastmod>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/</loc>
+      
+      <lastmod>2019-03-14T00:00:00+00:00</lastmod>
       
       
       
