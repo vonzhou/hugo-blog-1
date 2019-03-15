@@ -3,7 +3,7 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
     <url>
-      <loc>https://example.com/categories/</loc>
+      <loc>http://vonzhou.com/categories/</loc>
       
       
       
@@ -13,7 +13,7 @@
     </url>
   
     <url>
-      <loc>https://example.com/</loc>
+      <loc>http://vonzhou.com/tags/</loc>
       
       
       
@@ -23,7 +23,7 @@
     </url>
   
     <url>
-      <loc>https://example.com/tags/</loc>
+      <loc>http://vonzhou.com/</loc>
       
       
       
