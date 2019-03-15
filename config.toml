@@ -23,21 +23,26 @@ preserveTaxonomyNames = true
     name = "博客"
     url = "/posts/"
     weight = 1
+  
+  [[menu.main]]
+    name = "读书"
+    url = "https://github.com/vonzhou/readings"
+    weight = 2
 
   [[menu.main]]
     name = "分类"
     url = "/categories/"
-    weight = 2
+    weight = 3
 
   [[menu.main]]
     name = "标签"
     url = "/tags/"
-    weight = 3
+    weight = 4
 
   [[menu.main]]
     name = "关于"
     url = "/about/"
-    weight = 4
+    weight = 5
 
 [params]
     since = 2011
