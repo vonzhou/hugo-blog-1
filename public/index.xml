@@ -163,5 +163,829 @@ while (true) {
 </description>
     </item>
     
+    <item>
+      <title>BeanUtils.copyProperties 源码分析</title>
+      <link>http://vonzhou.com/2019/spring-beanutils-copyproperties/</link>
+      <pubDate>Wed, 27 Feb 2019 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2019/spring-beanutils-copyproperties/</guid>
+      <description>
+
+&lt;h2 id=&#34;概述&#34;&gt;概述&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;利用反射&lt;/li&gt;
+&lt;li&gt;字段不一致也不会报错，因为会根据目标对象的属性去源对象中找对应的属性描述符，存在才拷贝&lt;/li&gt;
+&lt;li&gt;相同字段，类型不同，也不会有问题，因为拷贝之时会判断该字段源对象的读方法返回值，是否可应用用目标对象的写方法参数&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;实例&#34;&gt;实例&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class CopyPropertiesDemo {
+
+    public static void main(String[] args) {
+
+        Student s = new Student();
+        s.setName(&amp;quot;vz&amp;quot;);
+        s.setFoo(1024);
+        s.setBar(-1);
+
+        Father f = new Father();
+        BeanUtils.copyProperties(s, f);
+        System.out.println(f);
+    }
+
+    static class Student{
+        private String name;
+        private int foo;
+        private int bar;
+        // setters and getters
+    }
+
+
+    static class Father{
+        private String name;
+        private int age;
+        private int salary;
+        private double foo;
+        private Integer bar;
+        // setters and getters
+
+        @Override
+        public String toString() {
+            return &amp;quot;Father{&amp;quot; +
+                    &amp;quot;name=&#39;&amp;quot; + name + &#39;\&#39;&#39; +
+                    &amp;quot;, age=&amp;quot; + age +
+                    &amp;quot;, salary=&amp;quot; + salary +
+                    &amp;quot;, foo=&amp;quot; + foo +
+                    &amp;quot;, bar=&amp;quot; + bar +
+                    &#39;}&#39;;
+        }
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;输出：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;Father{name=&#39;vz&#39;, age=0, salary=0, foo=0.0, bar=-1}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;copyproperties-源码分析&#34;&gt;copyProperties 源码分析&lt;/h2&gt;
+
+&lt;p&gt;copyProperties 的实现总体上很清晰：利用反射，调用source对象的get方法，然后set到target对象中。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public static void copyProperties(Object source, Object target) throws BeansException {
+        copyProperties(source, target, null, (String[]) null);
+    }
+
+private static void copyProperties(Object source, Object target, Class&amp;lt;?&amp;gt; editable, String... ignoreProperties)
+            throws BeansException {
+        Class&amp;lt;?&amp;gt; actualEditable = target.getClass();
+
+        PropertyDescriptor[] targetPds = getPropertyDescriptors(actualEditable);
+        List&amp;lt;String&amp;gt; ignoreList = (ignoreProperties != null ? Arrays.asList(ignoreProperties) : null);
+
+        for (PropertyDescriptor targetPd : targetPds) {
+            Method writeMethod = targetPd.getWriteMethod();
+            if (writeMethod != null &amp;amp;&amp;amp; (ignoreList == null || !ignoreList.contains(targetPd.getName()))) {
+                PropertyDescriptor sourcePd = getPropertyDescriptor(source.getClass(), targetPd.getName());
+                if (sourcePd != null) {
+                    Method readMethod = sourcePd.getReadMethod();
+                    if (readMethod != null &amp;amp;&amp;amp;
+                            ClassUtils.isAssignable(writeMethod.getParameterTypes()[0], readMethod.getReturnType())) {
+                        try {
+                            if (!Modifier.isPublic(readMethod.getDeclaringClass().getModifiers())) {
+                                readMethod.setAccessible(true);
+                            }
+                            Object value = readMethod.invoke(source);
+                            if (!Modifier.isPublic(writeMethod.getDeclaringClass().getModifiers())) {
+                                writeMethod.setAccessible(true);
+                            }
+                            writeMethod.invoke(target, value);
+                        }
+                        catch (Throwable ex) {
+                            throw new FatalBeanException(
+                                    &amp;quot;Could not copy property &#39;&amp;quot; + targetPd.getName() + &amp;quot;&#39; from source to target&amp;quot;, ex);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;获取-propertydescriptor&#34;&gt;获取 PropertyDescriptor&lt;/h2&gt;
+
+&lt;p&gt;PropertyDescriptor 描述的是Java Bean的一个属性，具有读写(getter/setter)方法，&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public static PropertyDescriptor[] getPropertyDescriptors(Class&amp;lt;?&amp;gt; clazz) throws BeansException {
+        CachedIntrospectionResults cr = CachedIntrospectionResults.forClass(clazz);
+        return cr.getPropertyDescriptors();
+    }
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;CachedIntrospectionResults&lt;/code&gt;缓存了Java Bean对应Class的&lt;code&gt;PropertyDescriptor&lt;/code&gt;信息，存储数据结构是&lt;code&gt;ConcurrentHashMap&lt;/code&gt;：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;static final ConcurrentMap&amp;lt;Class&amp;lt;?&amp;gt;, CachedIntrospectionResults&amp;gt; strongClassCache =
+            new ConcurrentHashMap&amp;lt;Class&amp;lt;?&amp;gt;, CachedIntrospectionResults&amp;gt;(64);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;先从缓存中查询，如果没有，则进行实际的解析，构造。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;static CachedIntrospectionResults forClass(Class&amp;lt;?&amp;gt; beanClass) throws BeansException {
+        CachedIntrospectionResults results = strongClassCache.get(beanClass);
+        if (results != null) {
+            return results;
+        }
+        results = softClassCache.get(beanClass);
+        if (results != null) {
+            return results;
+        }
+
+        // TODO 具体的解析过程
+        results = new CachedIntrospectionResults(beanClass);
+        ConcurrentMap&amp;lt;Class&amp;lt;?&amp;gt;, CachedIntrospectionResults&amp;gt; classCacheToUse;
+
+        // TODO cachesafe ？
+        if (ClassUtils.isCacheSafe(beanClass, CachedIntrospectionResults.class.getClassLoader()) ||
+                isClassLoaderAccepted(beanClass.getClassLoader())) {
+            classCacheToUse = strongClassCache;
+        }
+        else {
+            classCacheToUse = softClassCache;
+        }
+
+        CachedIntrospectionResults existing = classCacheToUse.putIfAbsent(beanClass, results);
+        return (existing != null ? existing : results);
+    }
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;接下来看&lt;code&gt;CachedIntrospectionResults&lt;/code&gt;构造函数，先是利用&lt;code&gt;Introspector&lt;/code&gt;解析class的&lt;code&gt;BeanInfo&lt;/code&gt;（实现类是&lt;code&gt;GenericBeanInfo&lt;/code&gt;），然后更新缓存。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private CachedIntrospectionResults(Class&amp;lt;?&amp;gt; beanClass) throws BeansException {
+        try {
+            BeanInfo beanInfo = null;
+            if (beanInfo == null) {
+                // If none of the factories supported the class, fall back to the default
+                beanInfo = (shouldIntrospectorIgnoreBeaninfoClasses ?
+                        Introspector.getBeanInfo(beanClass, Introspector.IGNORE_ALL_BEANINFO) :
+                        Introspector.getBeanInfo(beanClass)); // 这里
+            }
+            this.beanInfo = beanInfo;
+
+
+            this.propertyDescriptorCache = new LinkedHashMap&amp;lt;String, PropertyDescriptor&amp;gt;();
+
+            // This call is slow so we do it once.
+            PropertyDescriptor[] pds = this.beanInfo.getPropertyDescriptors();
+            for (PropertyDescriptor pd : pds) {
+                if (Class.class == beanClass &amp;amp;&amp;amp;
+                        (&amp;quot;classLoader&amp;quot;.equals(pd.getName()) ||  &amp;quot;protectionDomain&amp;quot;.equals(pd.getName()))) {
+                    // Ignore Class.getClassLoader() and getProtectionDomain() methods - nobody needs to bind to those
+                    continue;
+                }
+                pd = buildGenericTypeAwarePropertyDescriptor(beanClass, pd);
+                this.propertyDescriptorCache.put(pd.getName(), pd);
+            }
+
+            this.typeDescriptorCache = new ConcurrentReferenceHashMap&amp;lt;PropertyDescriptor, TypeDescriptor&amp;gt;();
+        }
+        catch (IntrospectionException ex) {
+            throw new FatalBeanException(&amp;quot;Failed to obtain BeanInfo for class [&amp;quot; + beanClass.getName() + &amp;quot;]&amp;quot;, ex);
+        }
+    }
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;判断是否可赋值-assignable&#34;&gt;判断是否可赋值（Assignable）&lt;/h2&gt;
+
+&lt;p&gt;看工具类&lt;code&gt;ClassUtils&lt;/code&gt;。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public static boolean isAssignable(Class&amp;lt;?&amp;gt; lhsType, Class&amp;lt;?&amp;gt; rhsType) {
+        if (lhsType.isAssignableFrom(rhsType)) {
+            return true;
+        }
+        if (lhsType.isPrimitive()) {
+            Class&amp;lt;?&amp;gt; resolvedPrimitive = primitiveWrapperTypeMap.get(rhsType);
+            if (lhsType == resolvedPrimitive) {
+                return true;
+            }
+        }
+        else {
+            Class&amp;lt;?&amp;gt; resolvedWrapper = primitiveTypeToWrapperMap.get(rhsType);
+            if (resolvedWrapper != null &amp;amp;&amp;amp; lhsType.isAssignableFrom(resolvedWrapper)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;java.lang.Class.isAssignableFrom&lt;/code&gt;方法是native的，判断当前类型是否是另一个的超类，或者父接口，或者类型一样，可以看个例子：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class IsAssignableFromDemo {
+    public static void main(String[] args) {
+        System.out.println(Object.class.isAssignableFrom(Object.class)); // true
+        System.out.println(Object.class.isAssignableFrom(String.class)); // true
+        System.out.println(List.class.isAssignableFrom(ArrayList.class)); // true
+        System.out.println(int.class.isAssignableFrom(long.class)); //false
+        System.out.println(int.class.isAssignableFrom(int.class));//true
+    }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;isAssignable&lt;/code&gt;同时也会考虑原始类型及包装类型的情况，比如 int a 可以被拷贝到另一个对象的 Integer a 中。&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>为什么枚举是实现单例最好的方式？</title>
+      <link>http://vonzhou.com/2019/enum-singleton/</link>
+      <pubDate>Thu, 14 Feb 2019 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2019/enum-singleton/</guid>
+      <description>
+
+&lt;p&gt;提到单例模式（Singleton Pattern），都能说出一二，但是没那么简单。&lt;/p&gt;
+
+&lt;h2 id=&#34;实现单例的方式&#34;&gt;实现单例的方式&lt;/h2&gt;
+
+&lt;p&gt;本文代码&lt;a href=&#34;https://github.com/vonzhou/learning-java/tree/master/src/lang/enumsingleton&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;在这里&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&#34;法1-静态成员&#34;&gt;法1：静态成员&lt;/h3&gt;
+
+&lt;p&gt;不多说。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Singleton1 {
+    public static final Singleton1 INSTANCE = new Singleton1();
+
+    private Singleton1() {
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;法2-静态工厂&#34;&gt;法2：静态工厂&lt;/h3&gt;
+
+&lt;p&gt;和法1一样，只不过通过工厂方法来返回实例，在API设计上更可取。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Singleton2 {
+    private static final Singleton2 INSTANCE = new Singleton2();
+
+    private Singleton2() {
+    }
+
+    public static Singleton2 getInstance() {
+        return INSTANCE;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;法3-lazy-initialization-延迟初始化&#34;&gt;法3：lazy initialization 延迟初始化&lt;/h3&gt;
+
+&lt;p&gt;前面法1，法2是饿汉式，lazy initialization 是懒汉式，需要的时候实例化，另外 double check。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Singleton3 {
+    private static Singleton3 INSTANCE = null;
+
+    private Singleton3() {
+    }
+
+    public static Singleton3 getInstance() {
+        if (INSTANCE == null) {
+            synchronized (Singleton3.class) {
+                if (INSTANCE == null) {
+                    INSTANCE = new Singleton3();
+                }
+            }
+        }
+        return INSTANCE;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这3种方法思路是一样的，都是把构造器搞成私有的，控制实例化的过程。但是 &lt;code&gt;private constructor&lt;/code&gt; 是可以被绕过的：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;序列化，反序列化&lt;/li&gt;
+&lt;li&gt;反射&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;序列化&#34;&gt;序列化&lt;/h3&gt;
+
+&lt;p&gt;Singleton1实例序列化，然后反序列化会得到一个不同的对象。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Singleton1 implements Serializable {
+    public static final Singleton1 INSTANCE = new Singleton1();
+
+    private Singleton1() {
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class SingletonSerializationDemo {
+
+    public static void main(String[] args) {
+        // 对于Singleton2, 对于Singleton3 表现是一样的
+        Singleton1 obj1 = Singleton1.INSTANCE;
+        Singleton1 obj2 = Singleton1.INSTANCE;
+        System.out.println(obj1 == obj2 ? &amp;quot;Two objects are same&amp;quot; : &amp;quot;Two objects are different&amp;quot;);
+
+        // 序列化 obj1
+        try {
+            ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(&amp;quot;out.ser&amp;quot;));
+            out.writeObject(obj1);
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+        Singleton1 obj3 = null;
+        try {
+            ObjectInputStream in = new ObjectInputStream(new FileInputStream(&amp;quot;out.ser&amp;quot;));
+            obj3 = (Singleton1) in.readObject();
+            in.close();
+        } catch (Exception i) {
+            i.printStackTrace();
+        }
+
+        System.out.println(obj1 == obj3 ? &amp;quot;Two objects are same&amp;quot; : &amp;quot;Two objects are different&amp;quot;);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;输出：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;Two objects are same
+Two objects are different
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;所以这样就违背了单例的初衷。为了使得反序列化后的对象是同一个，我们可以提供&lt;code&gt;readResolve&lt;/code&gt;方法，会在反序列过程中被调用。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Singleton1 implements Serializable {
+    public static final Singleton1 INSTANCE = new Singleton1();
+
+    private Singleton1() {
+    }
+
+    // 注释掉该方法， 进行对比
+    protected Object readResolve() {
+        return INSTANCE;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;输出：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;Two objects are same
+Two objects are same
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;反射&#34;&gt;反射&lt;/h3&gt;
+
+&lt;p&gt;面对反射，private constructor也是无能为力。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class SingletonReflectionDemo {
+    public static void main(String[] args) throws Exception {
+        Singleton1 obj1 = Singleton1.INSTANCE;
+        // 得到无参构造器
+        Constructor constructor = obj1.getClass().getDeclaredConstructor(new Class[0]);
+        // 这里使私有构造器可以访问
+        constructor.setAccessible(true);
+        Singleton1 obj2 = (Singleton1) constructor.newInstance();
+        System.out.println(obj1 == obj2 ? &amp;quot;Two objects are same&amp;quot; : &amp;quot;Two objects are different&amp;quot;);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;输出：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;Two objects are different
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;那么面对序列化，反射，有没有更好实现Singleton的方式？enum&amp;hellip;..&lt;/p&gt;
+
+&lt;h2 id=&#34;enum是实现单例最好的方式-法4&#34;&gt;enum是实现单例最好的方式（法4）&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public enum SingletonUsingEnum {
+    INSTANCE
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;反序列化得到的也是同一个实例。&lt;/strong&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class SingletonUsingEnumSerializationDemo {
+    public static void main(String[] args) {
+        SingletonUsingEnum obj1 = SingletonUsingEnum.INSTANCE;
+
+        // 序列化 obj1
+        try {
+            ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(&amp;quot;out.ser&amp;quot;));
+            out.writeObject(obj1);
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+        SingletonUsingEnum obj3 = null;
+        try {
+            ObjectInputStream in = new ObjectInputStream(new FileInputStream(&amp;quot;out.ser&amp;quot;));
+            obj3 = (SingletonUsingEnum) in.readObject();
+            in.close();
+        } catch (Exception i) {
+            i.printStackTrace();
+        }
+        System.out.println(obj1 == obj3 ? &amp;quot;Two objects are same&amp;quot; : &amp;quot;Two objects are different&amp;quot;);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;输出：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;Two objects are same
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;使用反射创建Enum实例的时候，会抛出异常。&lt;/strong&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class SingletonUsingEnumReflectionDemo {
+    public static void main(String[] args) throws Exception {
+        SingletonUsingEnum obj1 = SingletonUsingEnum.INSTANCE;
+        Constructor constructor = obj1.getClass().getDeclaredConstructors()[0];
+        constructor.setAccessible(true);
+        SingletonUsingEnum obj2 = (SingletonUsingEnum) constructor.newInstance();
+        System.out.println(obj1 == obj2 ? &amp;quot;Two objects are same&amp;quot; : &amp;quot;Two objects are different&amp;quot;);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;输出：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;Exception in thread &amp;quot;main&amp;quot; java.lang.IllegalArgumentException: Cannot reflectively create enum objects
+    at java.lang.reflect.Constructor.newInstance(Constructor.java:417)
+    at lang.enumsingleton.SingletonUsingEnumReflectionDemo.main(SingletonUsingEnumReflectionDemo.java:16)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;枚举是一个语法糖&#34;&gt;枚举是一个语法糖&lt;/h2&gt;
+
+&lt;p&gt;一个例子开始。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public enum ColorEnum {
+    RED,
+    BLUE
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;对class文件进行反编译， &lt;code&gt;javap -v ColorEnum.class&lt;/code&gt; 输出：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;Classfile /D:/GitHub/learning-java/target/classes/lang/ColorEnum.class
+  Last modified 2019-2-14; size 898 bytes
+  MD5 checksum 79dff593c44747f1648cd48465351caf
+  Compiled from &amp;quot;ColorEnum.java&amp;quot;
+public final class lang.ColorEnum extends java.lang.Enum&amp;lt;lang.ColorEnum&amp;gt;
+  minor version: 0
+  major version: 52
+  flags: ACC_PUBLIC, ACC_FINAL, ACC_SUPER, ACC_ENUM
+Constant pool:
+   #1 = Fieldref           #4.#36         // lang/ColorEnum.$VALUES:[Llang/ColorEnum;
+   #2 = Methodref          #37.#38        // &amp;quot;[Llang/ColorEnum;&amp;quot;.clone:()Ljava/lang/Object;
+   #3 = Class              #17            // &amp;quot;[Llang/ColorEnum;&amp;quot;
+   #4 = Class              #39            // lang/ColorEnum
+   #5 = Methodref          #12.#40        // java/lang/Enum.valueOf:(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/Enum;
+   #6 = Methodref          #12.#41        // java/lang/Enum.&amp;quot;&amp;lt;init&amp;gt;&amp;quot;:(Ljava/lang/String;I)V
+   #7 = String             #13            // RED
+   #8 = Methodref          #4.#41         // lang/ColorEnum.&amp;quot;&amp;lt;init&amp;gt;&amp;quot;:(Ljava/lang/String;I)V
+   #9 = Fieldref           #4.#42         // lang/ColorEnum.RED:Llang/ColorEnum;
+  #10 = String             #15            // BLUE
+  #11 = Fieldref           #4.#43         // lang/ColorEnum.BLUE:Llang/ColorEnum;
+  #12 = Class              #44            // java/lang/Enum
+  #13 = Utf8               RED
+  #14 = Utf8               Llang/ColorEnum;
+  #15 = Utf8               BLUE
+  #16 = Utf8               $VALUES
+  #17 = Utf8               [Llang/ColorEnum;
+  #18 = Utf8               values
+  #19 = Utf8               ()[Llang/ColorEnum;
+  #20 = Utf8               Code
+  #21 = Utf8               LineNumberTable
+  #22 = Utf8               valueOf
+  #23 = Utf8               (Ljava/lang/String;)Llang/ColorEnum;
+  #24 = Utf8               LocalVariableTable
+  #25 = Utf8               name
+  #26 = Utf8               Ljava/lang/String;
+  #27 = Utf8               &amp;lt;init&amp;gt;
+  #28 = Utf8               (Ljava/lang/String;I)V
+  #29 = Utf8               this
+  #30 = Utf8               Signature
+  #31 = Utf8               ()V
+  #32 = Utf8               &amp;lt;clinit&amp;gt;
+  #33 = Utf8               Ljava/lang/Enum&amp;lt;Llang/ColorEnum;&amp;gt;;
+  #34 = Utf8               SourceFile
+  #35 = Utf8               ColorEnum.java
+  #36 = NameAndType        #16:#17        // $VALUES:[Llang/ColorEnum;
+  #37 = Class              #17            // &amp;quot;[Llang/ColorEnum;&amp;quot;
+  #38 = NameAndType        #45:#46        // clone:()Ljava/lang/Object;
+  #39 = Utf8               lang/ColorEnum
+  #40 = NameAndType        #22:#47        // valueOf:(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/Enum;
+  #41 = NameAndType        #27:#28        // &amp;quot;&amp;lt;init&amp;gt;&amp;quot;:(Ljava/lang/String;I)V
+  #42 = NameAndType        #13:#14        // RED:Llang/ColorEnum;
+  #43 = NameAndType        #15:#14        // BLUE:Llang/ColorEnum;
+  #44 = Utf8               java/lang/Enum
+  #45 = Utf8               clone
+  #46 = Utf8               ()Ljava/lang/Object;
+  #47 = Utf8               (Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/Enum;
+{
+  public static final lang.ColorEnum RED;
+    descriptor: Llang/ColorEnum;
+    flags: ACC_PUBLIC, ACC_STATIC, ACC_FINAL, ACC_ENUM
+
+  public static final lang.ColorEnum BLUE;
+    descriptor: Llang/ColorEnum;
+    flags: ACC_PUBLIC, ACC_STATIC, ACC_FINAL, ACC_ENUM
+
+  public static lang.ColorEnum[] values();
+    descriptor: ()[Llang/ColorEnum;
+    flags: ACC_PUBLIC, ACC_STATIC
+    Code:
+      stack=1, locals=0, args_size=0
+         0: getstatic     #1                  // Field $VALUES:[Llang/ColorEnum;
+         3: invokevirtual #2                  // Method &amp;quot;[Llang/ColorEnum;&amp;quot;.clone:()Ljava/lang/Object;
+         6: checkcast     #3                  // class &amp;quot;[Llang/ColorEnum;&amp;quot;
+         9: areturn
+      LineNumberTable:
+        line 7: 0
+
+  public static lang.ColorEnum valueOf(java.lang.String);
+    descriptor: (Ljava/lang/String;)Llang/ColorEnum;
+    flags: ACC_PUBLIC, ACC_STATIC
+    Code:
+      stack=2, locals=1, args_size=1
+         0: ldc           #4                  // class lang/ColorEnum
+         2: aload_0
+         3: invokestatic  #5                  // Method java/lang/Enum.valueOf:(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/Enum;
+         6: checkcast     #4                  // class lang/ColorEnum
+         9: areturn
+      LineNumberTable:
+        line 7: 0
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0      10     0  name   Ljava/lang/String;
+
+  static {};
+    descriptor: ()V
+    flags: ACC_STATIC
+    Code:
+      stack=4, locals=0, args_size=0
+         0: new           #4                  // class lang/ColorEnum
+         3: dup
+         4: ldc           #7                  // String RED
+         6: iconst_0
+         7: invokespecial #8                  // Method &amp;quot;&amp;lt;init&amp;gt;&amp;quot;:(Ljava/lang/String;I)V
+        10: putstatic     #9                  // Field RED:Llang/ColorEnum;
+        13: new           #4                  // class lang/ColorEnum
+        16: dup
+        17: ldc           #10                 // String BLUE
+        19: iconst_1
+        20: invokespecial #8                  // Method &amp;quot;&amp;lt;init&amp;gt;&amp;quot;:(Ljava/lang/String;I)V
+        23: putstatic     #11                 // Field BLUE:Llang/ColorEnum;
+        26: iconst_2
+        27: anewarray     #4                  // class lang/ColorEnum
+        30: dup
+        31: iconst_0
+        32: getstatic     #9                  // Field RED:Llang/ColorEnum;
+        35: aastore
+        36: dup
+        37: iconst_1
+        38: getstatic     #11                 // Field BLUE:Llang/ColorEnum;
+        41: aastore
+        42: putstatic     #1                  // Field $VALUES:[Llang/ColorEnum;
+        45: return
+      LineNumberTable:
+        line 8: 0
+        line 9: 13
+        line 7: 26
+}
+Signature: #33                          // Ljava/lang/Enum&amp;lt;Llang/ColorEnum;&amp;gt;;
+SourceFile: &amp;quot;ColorEnum.java&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;可以看到：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;定义的枚举最终就是一个继承了&lt;code&gt;java.lang.Enum&lt;/code&gt;的类&lt;/li&gt;
+&lt;li&gt;生成了2个静态方法&lt;code&gt;valueOf()&lt;/code&gt;, &lt;code&gt;values()&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;定义了2个&lt;code&gt;static final&lt;/code&gt;变量 &lt;code&gt;RED&lt;/code&gt;, &lt;code&gt;BLUE&lt;/code&gt;，并且在静态块中进行了实例化&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;enum-分析&#34;&gt;Enum 分析&lt;/h2&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/enum.png&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public abstract class Enum&amp;lt;E extends Enum&amp;lt;E&amp;gt;&amp;gt; implements Comparable&amp;lt;E&amp;gt;, Serializable {
+    private final String name;
+    private final int ordinal;
+
+    public final String name() {
+        return this.name;
+    }
+
+    public final int ordinal() {
+        return this.ordinal;
+    }
+
+    protected Enum(String var1, int var2) {
+        this.name = var1;
+        this.ordinal = var2;
+    }
+
+    public String toString() {
+        return this.name;
+    }
+
+    public final boolean equals(Object var1) {
+        return this == var1;
+    }
+
+    public final int hashCode() {
+        return super.hashCode();
+    }
+
+    protected final Object clone() throws CloneNotSupportedException {
+        throw new CloneNotSupportedException();
+    }
+
+    public final int compareTo(E var1) {
+        if (this.getClass() != var1.getClass() &amp;amp;&amp;amp; this.getDeclaringClass() != var1.getDeclaringClass()) {
+            throw new ClassCastException();
+        } else {
+            return this.ordinal - var1.ordinal;
+        }
+    }
+
+    public final Class&amp;lt;E&amp;gt; getDeclaringClass() {
+        Class var1 = this.getClass();
+        Class var2 = var1.getSuperclass();
+        return var2 == Enum.class ? var1 : var2;
+    }
+
+    public static &amp;lt;T extends Enum&amp;lt;T&amp;gt;&amp;gt; T valueOf(Class&amp;lt;T&amp;gt; var0, String var1) {
+        Enum var2 = (Enum)var0.enumConstantDirectory().get(var1);
+        if (var2 != null) {
+            return var2;
+        } else if (var1 == null) {
+            throw new NullPointerException(&amp;quot;Name is null&amp;quot;);
+        } else {
+            throw new IllegalArgumentException(&amp;quot;No enum constant &amp;quot; + var0.getCanonicalName() + &amp;quot;.&amp;quot; + var1);
+        }
+    }
+
+    // enum class 不能实现 finalize 方法，为什么？？
+    protected final void finalize() {
+    }
+
+    private void readObject(ObjectInputStream var1) throws IOException, ClassNotFoundException {
+        throw new InvalidObjectException(&amp;quot;can&#39;t deserialize enum&amp;quot;);
+    }
+
+    private void readObjectNoData() throws ObjectStreamException {
+        throw new InvalidObjectException(&amp;quot;can&#39;t deserialize enum&amp;quot;);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;接下来看看Enum的序列化，反序列化过程。&lt;/p&gt;
+
+&lt;p&gt;Enum序列化的实现在&lt;code&gt;java.io.ObjectOutputStream.writeEnum&lt;/code&gt;中，可以看到&lt;strong&gt;只对枚举的名称进行了序列化&lt;/strong&gt;。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private void writeEnum(Enum&amp;lt;?&amp;gt; en,
+                           ObjectStreamClass desc,
+                           boolean unshared)
+        throws IOException
+    {
+        bout.writeByte(TC_ENUM); // 特殊标记
+        ObjectStreamClass sdesc = desc.getSuperDesc();
+        writeClassDesc((sdesc.forClass() == Enum.class) ? desc : sdesc, false);
+        handles.assign(unshared ? null : en);
+        // 这里
+        writeString(en.name(), false);
+    }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;反序列化的实现在&lt;code&gt;java.io.ObjectInputStream.readEnum&lt;/code&gt;，读出Enum的name之后，从常量字典中查找出对应的枚举常量，保证了唯一性。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private Enum&amp;lt;?&amp;gt; readEnum(boolean unshared) throws IOException {
+        if (bin.readByte() != TC_ENUM) {
+            throw new InternalError();
+        }
+
+        ObjectStreamClass desc = readClassDesc(false);
+        if (!desc.isEnum()) {
+            throw new InvalidClassException(&amp;quot;non-enum class: &amp;quot; + desc);
+        }
+
+        int enumHandle = handles.assign(unshared ? unsharedMarker : null);
+        ClassNotFoundException resolveEx = desc.getResolveException();
+        if (resolveEx != null) {
+            handles.markException(enumHandle, resolveEx);
+        }
+
+        String name = readString(false);
+        Enum&amp;lt;?&amp;gt; result = null;
+        Class&amp;lt;?&amp;gt; cl = desc.forClass();
+        if (cl != null) {
+            try {
+                // 关键代码
+                @SuppressWarnings(&amp;quot;unchecked&amp;quot;)
+                Enum&amp;lt;?&amp;gt; en = Enum.valueOf((Class)cl, name);
+                result = en;
+            } catch (IllegalArgumentException ex) {
+                throw (IOException) new InvalidObjectException(
+                    &amp;quot;enum constant &amp;quot; + name + &amp;quot; does not exist in &amp;quot; +
+                    cl).initCause(ex);
+            }
+            if (!unshared) {
+                handles.setObject(enumHandle, result);
+            }
+        }
+
+        handles.finish(enumHandle);
+        passHandle = enumHandle;
+        return result;
+    }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;所以，enum是实现单例最好的方式。&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>RocketMQ源码阅读 -  从消息发送到存储</title>
+      <link>http://vonzhou.com/2016/rocketmq-from-msg-send-to-store/</link>
+      <pubDate>Tue, 30 Aug 2016 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2016/rocketmq-from-msg-send-to-store/</guid>
+      <description>
+
+&lt;h2 id=&#34;rocketmq-简介&#34;&gt;RocketMQ 简介&lt;/h2&gt;
+
+&lt;p&gt;RocketMQ 是一款开源的消息中间件，采用Java实现，设计思想来自于Kafka（Scala实现）。接下来是自己阅读源码的一些探索。&lt;/p&gt;
+
+&lt;p&gt;RocketMQ的整体架构如下，可以看到各个组件充当的角色，Name Server 负责维护一些全局的路由信息：当前有哪些broker，每个Topic在哪个broker上; Broker具体处理消息的存储和服务；生产者和消费者是消息的源头和归宿。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/RocketMQ-arch.jpg&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;producer-发送消息&#34;&gt;Producer 发送消息&lt;/h2&gt;
+
+&lt;p&gt;Producer发送消息是如何得知发到哪个broker的 ？ 每个应用在收发消息之前，一般会调用一次&lt;code&gt;producer.start()/consumer.start()&lt;/code&gt;做一些初始化工作，其中包括：创建需要的实例对象，如&lt;code&gt;MQClientInstance&lt;/code&gt;；设置定时任务，如从Nameserver中定时更新本地的&lt;code&gt;Topic route info&lt;/code&gt;，发送心跳信息到所有的 broker，动态调整线程池的大小，把当前producer加入到指定的组中等等。&lt;/p&gt;
+
+&lt;p&gt;客户端会缓存路由信息&lt;code&gt;TopicPublishInfo&lt;/code&gt;, 同时定期从NameServer取Topic路由信息，每个Broker与NameServer集群中的所有节点建立长连接，定时注册Topic信息到所有的NameServer。&lt;/p&gt;
+
+&lt;p&gt;Producer在发送消息的时候会去查询本地的topicPublishInfoTable（一个ConcurrentHashMap），如果没有命中的话就会询问NameServer得到路由信息(RequestCode=GET_ROUTEINTO_BY_TOPIC) 如果nameserver中也没有查询到（表示该主题的消息第一次发送），那么将会发送一个default的topic进行路由查询。具体过程如下图所示。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/RocketMQ-producer-send.jpg&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Producer 在得到了具体的通信地址后，发送过程就显而易见了。通过代码可以看到在选择消息队列进行发送时采用随机方式，同时和上一次发送的broker保持不同，防止热点。&lt;/p&gt;
+
+&lt;h2 id=&#34;broker处理来自producer的消息&#34;&gt;Broker处理来自Producer的消息&lt;/h2&gt;
+
+&lt;p&gt;每个producer在发送消息的时候都和对应的Broker建立了长连接，此时broker已经准备好接收Message，Broker的&lt;code&gt;SendMessageProcessor.sendMessage&lt;/code&gt;处理消息的存储，具体过程如下。接收到消息后，会先写入Commit Log文件（顺序写，写满了会新建一个新的文件），然后更新Consume queue文件（存储如何由topic定位到具体的消息）。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/RocketMQ-broker-msg-proc.jpg&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;rocketmq-存储特点&#34;&gt;RocketMQ 存储特点&lt;/h2&gt;
+
+&lt;p&gt;RocketMQ的消息采用顺序写到commitlog文件，然后利用consume queue文件作为逻辑队列（索引），如图。RocketMQ采用零拷贝mmap+write的方式来回应Consumer的请求，RocketMQ宣称大部分请求都会在Page Cache层得到满足，所以消息过多不会因为磁盘读使得性能下降，这里自己的理解是，在64bit机器下，虚存地址空间（&lt;code&gt;vm_area_struct&lt;/code&gt;）不是问题，所以相关的文件都会被映射到内存中（有定期删除文件的操作），即使此刻不在内存，操作系统也会因为缺页异常进行换入，虽然地址空间不是问题，但是一个进程映射文件的个数(&lt;code&gt;/proc/sys/vm/max_map_count&lt;/code&gt;)是有限的，所以可能在这里发生OOM。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/RocketMQ-CommitLog.jpg&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;通过Broker中的存储目录（默认路径是 $HOME/store）也能看到存储的逻辑视图：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/RocketMQ-store-directory.jpg&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;顺序消息是如何保证的&#34;&gt;顺序消息是如何保证的？&lt;/h2&gt;
+
+&lt;p&gt;需要业务层自己决定哪些消息应该顺序到达，然后发送的时候通过规则（hash）映射到同一个队列，因为没有谁比业务自己更加知道关于消息顺序的特点。这样的顺序是相对顺序，局部顺序，因为发送方只保证把这些消息顺序的发送到broker上的同一队列，但是不保证其他Producer也会发送消息到那个队列，所以需要Consumer在拉到消息后做一些过滤。&lt;/p&gt;
+
+&lt;h2 id=&#34;rocketmq-刷盘实现&#34;&gt;RocketMQ 刷盘实现&lt;/h2&gt;
+
+&lt;p&gt;Broker 在消息的存取时直接操作的是内存（内存映射文件），这可以提供系统的吞吐量，但是无法避免机器掉电时数据丢失，所以需要持久化到磁盘中。刷盘的最终实现都是使用NIO中的 &lt;code&gt;MappedByteBuffer.force()&lt;/code&gt; 将映射区的数据写入到磁盘，如果是同步刷盘的话，在Broker把消息写到CommitLog映射区后，就会等待写入完成。异步而言，只是唤醒对应的线程，不保证执行的时机，流程如图所示。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/RocketMQ-disk-flush.jpg&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;消息过滤&#34;&gt;消息过滤&lt;/h2&gt;
+
+&lt;p&gt;类似于重复数据删除技术（Data Deduplication），可以在源端做，也可以在目的端实现，就是网络和存储的权衡，如果在Broker端做消息过滤就需要逐一比对consume queue 的 tagsCode 字段（hashcode）,如果符合则传输给消费者，因为是 hashcode，所以存在误判，需要在 Consumer 接收到消息后进行字符串级别的过滤，确保准确性。&lt;/p&gt;
+
+&lt;h2 id=&#34;小结&#34;&gt;小结&lt;/h2&gt;
+
+&lt;p&gt;这次代码阅读主要着眼于消息的发送过程和Broker上的存储，其他方面的细节有待深入。&lt;/p&gt;
+</description>
+    </item>
+    
   </channel>
 </rss>

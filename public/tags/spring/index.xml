@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Spring on 编程之路</title>
+    <link>http://vonzhou.com/tags/spring/</link>
+    <description>Recent content in Spring on 编程之路</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Wed, 27 Feb 2019 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://vonzhou.com/tags/spring/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>BeanUtils.copyProperties 源码分析</title>
+      <link>http://vonzhou.com/2019/spring-beanutils-copyproperties/</link>
+      <pubDate>Wed, 27 Feb 2019 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2019/spring-beanutils-copyproperties/</guid>
+      <description>概述  利用反射 字段不一致也不会报错，因为会根据目标对象的属性去源对象中找对应的属性描述符，存在才拷贝 相同字段，类型不同，也不会有问题，因为拷贝之时会判断该字段源对象的读方法返回值，是否可应用用目标对象的写方法参数  实例 public class CopyPropertiesDemo { public static void main(String[] args) { Student s = new Student(); s.setName(&amp;quot;vz&amp;quot;); s.setFoo(1024); s.setBar(-1); Father f = new Father(); BeanUtils.copyProperties(s, f); System.out.println(f); } static class Student{ private String name; private int foo; private int bar; // setters and getters } static class Father{ private String name; private int age; private int salary; private double foo; private Integer bar; // setters and getters @Override public String toString() { return &amp;quot;Father{&amp;quot; + &amp;quot;name=&#39;&amp;quot; + name + &#39;\&#39;&#39; + &amp;quot;, age=&amp;quot; + age + &amp;quot;, salary=&amp;quot; + salary + &amp;quot;, foo=&amp;quot; + foo + &amp;quot;, bar=&amp;quot; + bar + &#39;}&#39;; } } }  输出：</description>
+    </item>
+    
+  </channel>
+</rss>
