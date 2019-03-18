@@ -6,8 +6,21 @@
     <description>Recent content in 编程之路 on 编程之路</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Fri, 15 Mar 2019 11:03:31 +0800</lastBuildDate>
+    <lastBuildDate>Mon, 18 Mar 2019 10:23:42 +0800</lastBuildDate>
     <atom:link href="/" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>关于我</title>
+      <link>http://vonzhou.com/about/</link>
+      <pubDate>Mon, 18 Mar 2019 10:23:42 +0800</pubDate>
+      
+      <guid>http://vonzhou.com/about/</guid>
+      <description>&lt;ul&gt;
+&lt;li&gt;2013~2016 武汉，研究生&lt;/li&gt;
+&lt;li&gt;2009~2013 武汉，大学&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
     
     <item>
       <title>波兰来客</title>
