@@ -30,6 +30,15 @@
     </item>
     
     <item>
+      <title>Redis</title>
+      <link>http://vonzhou.com/tags/redis/</link>
+      <pubDate>Fri, 14 Dec 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/tags/redis/</guid>
+      <description></description>
+    </item>
+    
+    <item>
       <title>RocketMQ</title>
       <link>http://vonzhou.com/tags/rocketmq/</link>
       <pubDate>Tue, 30 Aug 2016 00:00:00 +0000</pubDate>
@@ -80,6 +89,15 @@
       <pubDate>Fri, 15 Mar 2019 11:03:31 +0800</pubDate>
       
       <guid>http://vonzhou.com/tags/%E8%AF%97/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>读书</title>
+      <link>http://vonzhou.com/tags/%E8%AF%BB%E4%B9%A6/</link>
+      <pubDate>Sun, 16 Dec 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/tags/%E8%AF%BB%E4%B9%A6/</guid>
       <description></description>
     </item>
     

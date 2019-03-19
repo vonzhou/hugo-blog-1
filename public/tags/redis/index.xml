@@ -1,29 +1,15 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Java on 编程之路</title>
-    <link>http://vonzhou.com/categories/java/</link>
-    <description>Recent content in Java on 编程之路</description>
+    <title>Redis on 编程之路</title>
+    <link>http://vonzhou.com/tags/redis/</link>
+    <description>Recent content in Redis on 编程之路</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Thu, 14 Feb 2019 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Fri, 14 Dec 2018 00:00:00 +0000</lastBuildDate>
     
-	<atom:link href="http://vonzhou.com/categories/java/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="http://vonzhou.com/tags/redis/index.xml" rel="self" type="application/rss+xml" />
     
-    
-    <item>
-      <title>为什么枚举是实现单例最好的方式？</title>
-      <link>http://vonzhou.com/2019/enum-singleton/</link>
-      <pubDate>Thu, 14 Feb 2019 00:00:00 +0000</pubDate>
-      
-      <guid>http://vonzhou.com/2019/enum-singleton/</guid>
-      <description>提到单例模式（Singleton Pattern），都能说出一二，但是没那么简单。
-实现单例的方式 本文代码在这里.
-法1：静态成员 不多说。
-public class Singleton1 { public static final Singleton1 INSTANCE = new Singleton1(); private Singleton1() { } }  法2：静态工厂 和法1一样，只不过通过工厂方法来返回实例，在API设计上更可取。
-public class Singleton2 { private static final Singleton2 INSTANCE = new Singleton2(); private Singleton2() { } public static Singleton2 getInstance() { return INSTANCE; } }  法3：lazy initialization 延迟初始化 前面法1，法2是饿汉式，lazy initialization 是懒汉式，需要的时候实例化，另外 double check。
-public class Singleton3 { private static Singleton3 INSTANCE = null; private Singleton3() { } public static Singleton3 getInstance() { if (INSTANCE == null) { synchronized (Singleton3.</description>
-    </item>
     
     <item>
       <title>从连接池(JedisPool)获取Redis连接源码分析</title>
@@ -37,6 +23,17 @@ public class Singleton3 { private static Singleton3 INSTANCE = null; private Sin
 在使用StringRedisTemplate或者RedisTemplate操作Redis的时候，其实都最终调用RedisTemplate.execute方法，以最简单的get开始。
 // org.springframework.data.redis.core.DefaultValueOperations public V get(final Object key) { return execute(new ValueDeserializingRedisCallback(key) { protected byte[] inRedis(byte[] rawKey, RedisConnection connection) { return connection.get(rawKey); } }, true); }  执行之时，先根据我们提供的RedisConnectionFactory（实际的实现是JedisConnectionFactory，要么使用SpringBoot帮我们自动配置的实例，要么自己配置）来获取一个连接，然后就在这个RedisConnection上请求Redis Server。
 // org.springframework.data.redis.core.RedisTemplate public &amp;lt;T&amp;gt; T execute(RedisCallback&amp;lt;T&amp;gt; action, boolean exposeConnection, boolean pipeline) { RedisConnectionFactory factory = getConnectionFactory(); RedisConnection conn = null; try { if (enableTransactionSupport) { // only bind resources in case of potential transaction synchronization conn = RedisConnectionUtils.bindConnection(factory, enableTransactionSupport); } else { // 1.</description>
+    </item>
+    
+    <item>
+      <title>Redis中键的过期删除策略</title>
+      <link>http://vonzhou.com/2018/redis-expire/</link>
+      <pubDate>Sun, 09 Sep 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2018/redis-expire/</guid>
+      <description>Redis处理过期key的策略有定期删除和惰性删除。
+使用Redis时我们可以使用EXPIRE或EXPIREAT命令给key设置过期删除时间，结构体redisDb中的expires字典保存了所有key的过期时间，这个字典（dict）的key是一个指针，指向redis中的某个key对象，过期字典的value是一个保存过期时间的整数。
+/* Redis database representation. There are multiple databases identified * by integers from 0 (the default database) up to the max configured * database. The database number is the &#39;id&#39; field in the structure. */ typedef struct redisDb { dict *dict; /* The keyspace for this DB */ dict *expires; /* 过期字典*/ dict *blocking_keys; /* Keys with clients waiting for data (BLPOP) */ dict *ready_keys; /* Blocked keys that received a PUSH */ dict *watched_keys; /* WATCHED keys for MULTI/EXEC CAS */ struct evictionPoolEntry *eviction_pool; /* Eviction pool of keys */ int id; /* Database ID */ long long avg_ttl; /* Average TTL, just for stats */ } redisDb;  设置过期时间 不论是EXPIRE，EXPIREAT，还是PEXPIRE，PEXPIREAT，底层的具体实现是一样的。在Redis的key空间中找到要设置过期时间的这个key，然后将这个entry（key的指针，过期时间）加入到过期字典中。</description>
     </item>
     
   </channel>

@@ -924,6 +924,799 @@ SourceFile: &amp;quot;ColorEnum.java&amp;quot;
     </item>
     
     <item>
+      <title>2018阅读书单</title>
+      <link>http://vonzhou.com/2018/2018-read-book/</link>
+      <pubDate>Sun, 16 Dec 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2018/2018-read-book/</guid>
+      <description>&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;书名&lt;/th&gt;
+&lt;th&gt;评分&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;《七周七数据库》&lt;/td&gt;
+&lt;td&gt;☆☆&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;《给投资新手的极简股票课》&lt;/td&gt;
+&lt;td&gt;☆☆&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;《实战Java高并发程序设计》&lt;/td&gt;
+&lt;td&gt;☆☆☆☆&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;《HBase不睡觉书》&lt;/td&gt;
+&lt;td&gt;☆☆☆☆&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;《深入剖析Tomcat》&lt;/td&gt;
+&lt;td&gt;☆☆☆☆&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;《MyBatis技术内幕》&lt;/td&gt;
+&lt;td&gt;☆☆☆☆☆&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;《大数据技术丛书 : Storm分布式实时计算模式》&lt;/td&gt;
+&lt;td&gt;☆☆&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;《大型网站技术架构演进与性能优化》&lt;/td&gt;
+&lt;td&gt;☆☆☆&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;《Hadoop: The Definitive Guide 4th》&lt;/td&gt;
+&lt;td&gt;☆☆☆☆☆&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;《人工智能》李开复&lt;/td&gt;
+&lt;td&gt;☆☆☆☆&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;《Go语言实战》&lt;/td&gt;
+&lt;td&gt;☆☆☆☆&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;《Go语言圣经》&lt;/td&gt;
+&lt;td&gt;☆☆☆☆&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;《Kafka权威指南》&lt;/td&gt;
+&lt;td&gt;☆☆☆☆&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;《腾讯传 : 中国互联网公司进化论》&lt;/td&gt;
+&lt;td&gt;☆☆☆&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;《大型网站系统与Java中间件开发实践》&lt;/td&gt;
+&lt;td&gt;☆☆☆☆&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;《Spring Cloud微服务实战》&lt;/td&gt;
+&lt;td&gt;☆☆☆&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;《第一本Docker书》&lt;/td&gt;
+&lt;td&gt;☆☆☆&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;《HotSpot实战》&lt;/td&gt;
+&lt;td&gt;☆☆☆☆☆&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;《刷新 : 重新发现商业与未来》&lt;/td&gt;
+&lt;td&gt;☆☆☆☆&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;《百年孤独》&lt;/td&gt;
+&lt;td&gt;☆☆☆☆☆&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;《Designing Data-Intensive Applications》&lt;/td&gt;
+&lt;td&gt;☆☆☆☆☆&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>从连接池(JedisPool)获取Redis连接源码分析</title>
+      <link>http://vonzhou.com/2018/jedis-pool-get/</link>
+      <pubDate>Fri, 14 Dec 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2018/jedis-pool-get/</guid>
+      <description>&lt;p&gt;本文追踪下SpringBoot中使用StringRedisTemplate，从JedisPool中获取连接的过程，了解了该过程可以更好的进行连接池的参数调优。&lt;/p&gt;
+
+&lt;p&gt;一图胜千言，从JedisPool获取一个连接的过程：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/jedis-pool-get.jpg&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;接下来走进代码。&lt;/p&gt;
+
+&lt;p&gt;在使用StringRedisTemplate或者RedisTemplate操作Redis的时候，其实都最终调用RedisTemplate.execute方法，以最简单的get开始。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;// org.springframework.data.redis.core.DefaultValueOperations
+public V get(final Object key) {
+
+    return execute(new ValueDeserializingRedisCallback(key) {
+
+        protected byte[] inRedis(byte[] rawKey, RedisConnection connection) {
+            return connection.get(rawKey);
+        }
+    }, true);
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;执行之时，先根据我们提供的RedisConnectionFactory（实际的实现是JedisConnectionFactory，要么使用SpringBoot帮我们自动配置的实例，要么自己配置）来获取一个连接，然后就在这个RedisConnection上请求Redis Server。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;// org.springframework.data.redis.core.RedisTemplate
+public &amp;lt;T&amp;gt; T execute(RedisCallback&amp;lt;T&amp;gt; action, boolean exposeConnection, boolean pipeline) {
+    RedisConnectionFactory factory = getConnectionFactory();
+    RedisConnection conn = null;
+    try {
+
+        if (enableTransactionSupport) {
+            // only bind resources in case of potential transaction synchronization
+            conn = RedisConnectionUtils.bindConnection(factory, enableTransactionSupport);
+        } else {
+            // 1. 获取连接
+            conn = RedisConnectionUtils.getConnection(factory);
+        }
+
+        boolean existingConnection = TransactionSynchronizationManager.hasResource(factory);
+
+        RedisConnection connToUse = preProcessConnection(conn, existingConnection);
+
+        boolean pipelineStatus = connToUse.isPipelined();
+        if (pipeline &amp;amp;&amp;amp; !pipelineStatus) {
+            connToUse.openPipeline();
+        }
+
+        RedisConnection connToExpose = (exposeConnection ? connToUse : createRedisConnectionProxy(connToUse));
+        // 2. 执行实际的操作
+        T result = action.doInRedis(connToExpose);
+
+        // close pipeline
+        if (pipeline &amp;amp;&amp;amp; !pipelineStatus) {
+            connToUse.closePipeline();
+        }
+
+        // TODO: any other connection processing?
+        return postProcessResult(result, connToUse, existingConnection);
+    } finally {
+        RedisConnectionUtils.releaseConnection(conn, factory);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;重点看连接获取的过程。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;// org.springframework.data.redis.core.RedisConnectionUtils
+public static RedisConnection doGetConnection(RedisConnectionFactory factory, boolean allowCreate, boolean bind,
+        boolean enableTransactionSupport) {
+    // 交给我们的工厂
+    RedisConnection conn = factory.getConnection();
+
+    if (bind) {
+        RedisConnection connectionToBind = conn;
+        if (enableTransactionSupport &amp;amp;&amp;amp; isActualNonReadonlyTransactionActive()) {
+            connectionToBind = createConnectionProxy(conn, factory);
+        }
+
+        connHolder = new RedisConnectionHolder(connectionToBind);
+
+        TransactionSynchronizationManager.bindResource(factory, connHolder);
+        if (enableTransactionSupport) {
+            potentiallyRegisterTransactionSynchronisation(connHolder, factory);
+        }
+
+        return connHolder.getConnection();
+    }
+
+    return conn;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Jedis连接工厂负责创建jedis实例，如果使用连接池，则从池中获取，否则直接创建新的。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;// org.springframework.data.redis.connection.jedis.JedisConnectionFactory
+public RedisConnection getConnection() {
+
+    if (cluster != null) {
+        return getClusterConnection();
+    }
+
+    Jedis jedis = fetchJedisConnector();
+    JedisConnection connection = (usePool ? new JedisConnection(jedis, pool, dbIndex, clientName)
+            : new JedisConnection(jedis, null, dbIndex, clientName));
+    connection.setConvertPipelineAndTxResults(convertPipelineAndTxResults);
+    return postProcessConnection(connection);
+}
+
+protected Jedis fetchJedisConnector() {
+    try {
+        // 使用连接池的情形
+        if (usePool &amp;amp;&amp;amp; pool != null) {
+            return pool.getResource();
+        }
+
+        Jedis jedis = new Jedis(getShardInfo());
+        // force initialization (see Jedis issue #82)
+        jedis.connect();
+
+        potentiallySetClientName(jedis);
+        return jedis;
+    } catch (Exception ex) {
+        throw new RedisConnectionFailureException(&amp;quot;Cannot get Jedis connection&amp;quot;, ex);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;接下来是Commons Pool里面的通用逻辑，先看池中的空闲对象（idle object）能否利用，不能的话就只能创建新的对象。此过程中，如果设置了等待超时时间，则超时资源得不到满足就抛出异常“Timeout waiting for idle object”，如果没有设置最大等待时间（maxWaitMillis），就会无限等待，这样如果获取连接的请求很多时就会耗尽系统的线程，要特别注意，实际生产中踩过。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;// org.apache.commons.pool2.impl.GenericObjectPool
+public T borrowObject(long borrowMaxWaitMillis) throws Exception {
+    assertOpen();
+
+    AbandonedConfig ac = this.abandonedConfig;
+    if (ac != null &amp;amp;&amp;amp; ac.getRemoveAbandonedOnBorrow() &amp;amp;&amp;amp;
+            (getNumIdle() &amp;lt; 2) &amp;amp;&amp;amp;
+            (getNumActive() &amp;gt; getMaxTotal() - 3) ) {
+        removeAbandoned(ac);
+    }
+
+    PooledObject&amp;lt;T&amp;gt; p = null;
+
+    // Get local copy of current config so it is consistent for entire
+    // method execution
+    boolean blockWhenExhausted = getBlockWhenExhausted();
+
+    boolean create;
+    long waitTime = System.currentTimeMillis();
+
+    while (p == null) {
+        create = false;
+        if (blockWhenExhausted) {
+            // 1. 复用
+            p = idleObjects.pollFirst();
+            if (p == null) {
+                // 2. 创建新资源对象
+                p = create();
+                if (p != null) {
+                    create = true;
+                }
+            }
+            if (p == null) {
+                if (borrowMaxWaitMillis &amp;lt; 0) {
+                    // 默认的borrowMaxWaitMillis是-1，会一直阻塞直到满足
+                    p = idleObjects.takeFirst();
+                } else {
+                    p = idleObjects.pollFirst(borrowMaxWaitMillis,
+                            TimeUnit.MILLISECONDS);
+                }
+            }
+            if (p == null) {
+                throw new NoSuchElementException(
+                        &amp;quot;Timeout waiting for idle object&amp;quot;);
+            }
+            if (!p.allocate()) {
+                p = null;
+            }
+        } else {
+            p = idleObjects.pollFirst();
+            if (p == null) {
+                p = create();
+                if (p != null) {
+                    create = true;
+                }
+            }
+            if (p == null) {
+                throw new NoSuchElementException(&amp;quot;Pool exhausted&amp;quot;);
+            }
+            if (!p.allocate()) {
+                p = null;
+            }
+        }
+
+        if (p != null) {
+            try {
+                factory.activateObject(p);
+            } catch (Exception e) {
+                try {
+                    destroy(p);
+                } catch (Exception e1) {
+                    // Ignore - activation failure is more important
+                }
+                p = null;
+                if (create) {
+                    NoSuchElementException nsee = new NoSuchElementException(
+                            &amp;quot;Unable to activate object&amp;quot;);
+                    nsee.initCause(e);
+                    throw nsee;
+                }
+            }
+            if (p != null &amp;amp;&amp;amp; (getTestOnBorrow() || create &amp;amp;&amp;amp; getTestOnCreate())) {
+                boolean validate = false;
+                Throwable validationThrowable = null;
+                try {
+                    validate = factory.validateObject(p);
+                } catch (Throwable t) {
+                    PoolUtils.checkRethrow(t);
+                    validationThrowable = t;
+                }
+                if (!validate) {
+                    try {
+                        destroy(p);
+                        destroyedByBorrowValidationCount.incrementAndGet();
+                    } catch (Exception e) {
+                        // Ignore - validation failure is more important
+                    }
+                    p = null;
+                    if (create) {
+                        NoSuchElementException nsee = new NoSuchElementException(
+                                &amp;quot;Unable to validate object&amp;quot;);
+                        nsee.initCause(validationThrowable);
+                        throw nsee;
+                    }
+                }
+            }
+        }
+    }
+
+    updateStatsBorrow(p, System.currentTimeMillis() - waitTime);
+
+    return p.getObject();
+}
+
+
+private PooledObject&amp;lt;T&amp;gt; create() throws Exception {
+    int localMaxTotal = getMaxTotal();
+    long newCreateCount = createCount.incrementAndGet();
+    if (localMaxTotal &amp;gt; -1 &amp;amp;&amp;amp; newCreateCount &amp;gt; localMaxTotal ||
+            newCreateCount &amp;gt; Integer.MAX_VALUE) {
+        createCount.decrementAndGet();
+        return null;
+    }
+
+    final PooledObject&amp;lt;T&amp;gt; p;
+    try {
+        // 交由工厂
+        p = factory.makeObject();
+    } catch (Exception e) {
+        createCount.decrementAndGet();
+        throw e;
+    }
+
+    AbandonedConfig ac = this.abandonedConfig;
+    if (ac != null &amp;amp;&amp;amp; ac.getLogAbandoned()) {
+        p.setLogAbandoned(true);
+    }
+
+    createdCount.incrementAndGet();
+    allObjects.put(new IdentityWrapper&amp;lt;T&amp;gt;(p.getObject()), p);
+    return p;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;最终实际的jedis实例由JedisFactory创建。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;// redis.clients.jedis.JedisFactory
+public PooledObject&amp;lt;Jedis&amp;gt; makeObject() throws Exception {
+final HostAndPort hostAndPort = this.hostAndPort.get();
+final Jedis jedis = new Jedis(hostAndPort.getHost(), hostAndPort.getPort(), connectionTimeout,
+    soTimeout, ssl, sslSocketFactory, sslParameters, hostnameVerifier);
+
+try {
+    jedis.connect();
+    if (null != this.password) {
+    jedis.auth(this.password);
+    }
+    if (database != 0) {
+    jedis.select(database);
+    }
+    if (clientName != null) {
+    jedis.clientSetname(clientName);
+    }
+} catch (JedisException je) {
+    jedis.close();
+    throw je;
+}
+
+return new DefaultPooledObject&amp;lt;Jedis&amp;gt;(jedis);
+
+}
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Redis中键的过期删除策略</title>
+      <link>http://vonzhou.com/2018/redis-expire/</link>
+      <pubDate>Sun, 09 Sep 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2018/redis-expire/</guid>
+      <description>
+
+&lt;p&gt;Redis处理过期key的策略有定期删除和惰性删除。&lt;/p&gt;
+
+&lt;p&gt;使用Redis时我们可以使用&lt;code&gt;EXPIRE&lt;/code&gt;或&lt;code&gt;EXPIREAT&lt;/code&gt;命令给key设置过期删除时间，结构体&lt;code&gt;redisDb&lt;/code&gt;中的&lt;code&gt;expires&lt;/code&gt;字典保存了所有key的过期时间，这个字典（dict）的key是一个指针，指向redis中的某个key对象，过期字典的value是一个保存过期时间的整数。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;/* Redis database representation. There are multiple databases identified
+ * by integers from 0 (the default database) up to the max configured
+ * database. The database number is the &#39;id&#39; field in the structure. */
+typedef struct redisDb {
+    dict *dict;                 /* The keyspace for this DB */
+    dict *expires;              /* 过期字典*/
+    dict *blocking_keys;        /* Keys with clients waiting for data (BLPOP) */
+    dict *ready_keys;           /* Blocked keys that received a PUSH */
+    dict *watched_keys;         /* WATCHED keys for MULTI/EXEC CAS */
+    struct evictionPoolEntry *eviction_pool;    /* Eviction pool of keys */
+    int id;                     /* Database ID */
+    long long avg_ttl;          /* Average TTL, just for stats */
+} redisDb;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;设置过期时间&#34;&gt;设置过期时间&lt;/h2&gt;
+
+&lt;p&gt;不论是&lt;code&gt;EXPIRE，EXPIREAT&lt;/code&gt;，还是&lt;code&gt;PEXPIRE，PEXPIREAT&lt;/code&gt;，底层的具体实现是一样的。在Redis的key空间中找到要设置过期时间的这个key，然后将这个entry（key的指针，过期时间）加入到过期字典中。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;void setExpire(redisDb *db, robj *key, long long when) {
+    dictEntry *kde, *de;
+
+    /* Reuse the sds from the main dict in the expire dict */
+    kde = dictFind(db-&amp;gt;dict,key-&amp;gt;ptr);
+    redisAssertWithInfo(NULL,key,kde != NULL);
+    de = dictReplaceRaw(db-&amp;gt;expires,dictGetKey(kde));
+    dictSetSignedIntegerVal(de,when);
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/redis-expire-1.jpg&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;过期删除策略&#34;&gt;过期删除策略&lt;/h2&gt;
+
+&lt;p&gt;如果一个key过期了，何时会被删除呢？在Redis中有两种过期删除策略：（1）惰性过期删除；（2）定期删除。接下来具体看看。&lt;/p&gt;
+
+&lt;h2 id=&#34;惰性过期删除&#34;&gt;惰性过期删除&lt;/h2&gt;
+
+&lt;p&gt;Redis在执行任何读写命令时都会先找到这个key，惰性删除就作为一个切入点放在查找key之前，如果key过期了就删除这个key。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/redis-expire-2.jpg&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;robj *lookupKeyRead(redisDb *db, robj *key) {
+    robj *val;
+
+    expireIfNeeded(db,key); // 切入点
+    val = lookupKey(db,key);
+    if (val == NULL)
+        server.stat_keyspace_misses++;
+    else
+        server.stat_keyspace_hits++;
+    return val;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;定期删除&#34;&gt;定期删除&lt;/h2&gt;
+
+&lt;p&gt;key的定期删除会在Redis的周期性执行任务（serverCron，默认每100ms执行一次）中进行，而且是发生Redis的master节点，因为slave节点会通过主节点的DEL命令同步过来达到删除key的目的。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/redis-expire-3.jpg&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;依次遍历每个db（默认配置数是16），针对每个db，每次循环随机选择20个（ACTIVE_EXPIRE_CYCLE_LOOKUPS_PER_LOOP）key判断是否过期，如果一轮所选的key少于25%过期，则终止迭次，此外在迭代过程中如果超过了一定的时间限制则终止过期删除这一过程。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;for (j = 0; j &amp;lt; dbs_per_call; j++) {
+    int expired;
+    redisDb *db = server.db+(current_db % server.dbnum);
+
+    /* Increment the DB now so we are sure if we run out of time
+     * in the current DB we&#39;ll restart from the next. This allows to
+     * distribute the time evenly across DBs. */
+    current_db++;
+
+    /* Continue to expire if at the end of the cycle more than 25%
+     * of the keys were expired. */
+    do {
+        unsigned long num, slots;
+        long long now, ttl_sum;
+        int ttl_samples;
+
+        /* 如果该db没有设置过期key，则继续看下个db*/
+        if ((num = dictSize(db-&amp;gt;expires)) == 0) {
+            db-&amp;gt;avg_ttl = 0;
+            break;
+        }
+        slots = dictSlots(db-&amp;gt;expires);
+        now = mstime();
+
+        /* When there are less than 1% filled slots getting random
+         * keys is expensive, so stop here waiting for better times...
+         * The dictionary will be resized asap. */
+        if (num &amp;amp;&amp;amp; slots &amp;gt; DICT_HT_INITIAL_SIZE &amp;amp;&amp;amp;
+            (num*100/slots &amp;lt; 1)) break;
+
+        /* The main collection cycle. Sample random keys among keys
+         * with an expire set, checking for expired ones. */
+        expired = 0;
+        ttl_sum = 0;
+        ttl_samples = 0;
+
+        if (num &amp;gt; ACTIVE_EXPIRE_CYCLE_LOOKUPS_PER_LOOP)
+            num = ACTIVE_EXPIRE_CYCLE_LOOKUPS_PER_LOOP;// 20
+
+        while (num--) {
+            dictEntry *de;
+            long long ttl;
+
+            if ((de = dictGetRandomKey(db-&amp;gt;expires)) == NULL) break;
+            ttl = dictGetSignedIntegerVal(de)-now;
+            if (activeExpireCycleTryExpire(db,de,now)) expired++;
+            if (ttl &amp;gt; 0) {
+                /* We want the average TTL of keys yet not expired. */
+                ttl_sum += ttl;
+                ttl_samples++;
+            }
+        }
+
+        /* Update the average TTL stats for this database. */
+        if (ttl_samples) {
+            long long avg_ttl = ttl_sum/ttl_samples;
+
+            /* Do a simple running average with a few samples.
+             * We just use the current estimate with a weight of 2%
+             * and the previous estimate with a weight of 98%. */
+            if (db-&amp;gt;avg_ttl == 0) db-&amp;gt;avg_ttl = avg_ttl;
+            db-&amp;gt;avg_ttl = (db-&amp;gt;avg_ttl/50)*49 + (avg_ttl/50);
+        }
+
+        /* We can&#39;t block forever here even if there are many keys to
+         * expire. So after a given amount of milliseconds return to the
+         * caller waiting for the other active expire cycle. */
+        iteration++;
+        if ((iteration &amp;amp; 0xf) == 0) { /* 每迭代16次检查一次 */
+            long long elapsed = ustime()-start;
+
+            latencyAddSampleIfNeeded(&amp;quot;expire-cycle&amp;quot;,elapsed/1000);
+            if (elapsed &amp;gt; timelimit) timelimit_exit = 1;
+        }
+        // 超过时间限制则退出
+        if (timelimit_exit) return;
+        /* 在当前db中，如果少于25%的key过期，则停止继续删除过期key */
+    } while (expired &amp;gt; ACTIVE_EXPIRE_CYCLE_LOOKUPS_PER_LOOP/4);
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;总结&#34;&gt;总结&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;惰性删除：读写之前判断key是否过期&lt;/li&gt;
+&lt;li&gt;定期删除：定期抽样key，判断是否过期&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>2017阅读书单</title>
+      <link>http://vonzhou.com/2018/2017-read-book/</link>
+      <pubDate>Wed, 03 Jan 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2018/2017-read-book/</guid>
+      <description>
+
+&lt;h2 id=&#34;技术&#34;&gt;技术&lt;/h2&gt;
+
+&lt;h3 id=&#34;hadoop实战&#34;&gt;《Hadoop实战》&lt;/h3&gt;
+
+&lt;p&gt;通过几个例子入门吧。&lt;/p&gt;
+
+&lt;h3 id=&#34;大型分布式网站架构设计与实践&#34;&gt;《大型分布式网站架构设计与实践》&lt;/h3&gt;
+
+&lt;p&gt;系统罗列了一些分布式架构中涉及的技术。&lt;/p&gt;
+
+&lt;h3 id=&#34;nginx-a-practical-guide-to-high-performance&#34;&gt;《nginx:a practical guide to high performance》&lt;/h3&gt;
+
+&lt;p&gt;有段时间系统性的学习了Nginx，这本小书很不错。&lt;/p&gt;
+
+&lt;h3 id=&#34;zookeeper-distributed-process-coordination&#34;&gt;《ZooKeeper：Distributed process coordination》&lt;/h3&gt;
+
+&lt;p&gt;读完就理解了Zookeeper的基本思想了，可以使用API进行编程了。还是要对一致性算法（如Raft）有理解。&lt;/p&gt;
+
+&lt;h3 id=&#34;redis开发与运维&#34;&gt;《redis开发与运维》&lt;/h3&gt;
+
+&lt;p&gt;各种命令的使用场景，最重要的可能就是里面对于可能遇到的问题如何分析处理。&lt;/p&gt;
+
+&lt;h3 id=&#34;mysql技术内幕-innodb存储引擎&#34;&gt;《MySQL技术内幕 : InnoDB存储引擎 》&lt;/h3&gt;
+
+&lt;p&gt;对底层原理讲述的比较清晰，读起来也是很顺畅，表是如何存储的？索引是如何设计的？&lt;/p&gt;
+
+&lt;h3 id=&#34;java-8实战&#34;&gt;《Java 8实战》&lt;/h3&gt;
+
+&lt;p&gt;对Java 8的特性讲述的很不错，函数式编程思想。&lt;/p&gt;
+
+&lt;h3 id=&#34;微服务设计&#34;&gt;《微服务设计》&lt;/h3&gt;
+
+&lt;p&gt;高屋建瓴讲述了微服务的方方面面，很多都需要去实践。架构的演进、部署、测试、安全&amp;hellip; 需要看看DDD相关的。&lt;/p&gt;
+
+&lt;h2 id=&#34;文学&#34;&gt;文学&lt;/h2&gt;
+
+&lt;h3 id=&#34;围城&#34;&gt;《围城》&lt;/h3&gt;
+
+&lt;p&gt;人物的描写很真实，能读到自己。&lt;/p&gt;
+
+&lt;h3 id=&#34;易中天中华史-大宋革新&#34;&gt;《易中天中华史·大宋革新》&lt;/h3&gt;
+
+&lt;p&gt;了解赵宋历史，武取的王朝却很重视文化，经济，正如清明上河图所反映的繁荣。&lt;/p&gt;
+
+&lt;h3 id=&#34;活着为了讲述&#34;&gt;《活着为了讲述》&lt;/h3&gt;
+
+&lt;p&gt;语言优美，值得反复阅读。&lt;/p&gt;
+
+&lt;p&gt;生活不是我们活过的日子，而是我们记住的日子，我们为了讲述而在记忆中重现的日子。&lt;/p&gt;
+
+&lt;p&gt;怀旧总会无视苦难，放大幸福，谁也免不了受它的侵袭。&lt;/p&gt;
+
+&lt;p&gt;唯一铁板钉钉的是，他们卷走了一切：钱、十二月的清风、切面包的餐刀、午后三点的惊雷、茉莉花香和爱。只留下灰头土脸的巴旦杏树、耀眼的街道、木头房子、生锈的锌皮屋顶，以及被回忆击垮、沉默寡言的人。&lt;/p&gt;
+
+&lt;p&gt;可是，那天晚上，我像战场上的战士一样视死如归地发下誓言：要么写作，要么死去。或者如里尔克所言：“如果您觉得不写也能活，那就别写。”&lt;/p&gt;
+
+&lt;p&gt;文学和人生只有形式上的差别，本质上是相通的。&lt;/p&gt;
+
+&lt;p&gt;他允许我把校图书馆的书带回家，其中的《金银岛》和《基督山伯爵》成了我坎坷岁月中的精神食粮。我如饥似渴地读，想知道下一行发生了什么，又不想知道，生怕精彩戛然而止。读完《一千零一夜》和这两本书之后，我永远地明白了一个道理：只有百读不厌的书才值得去读。&lt;/p&gt;
+
+&lt;p&gt;但当贫穷在巴兰基亚压得我们不能动弹时，我们不再去别人家吐苦水。妈妈一言蔽之:“穷人的眼睛里都写着‘穷’字。” 十分入骨的形容，一闭眼仿佛就看到了那双眼睛。也经历过穷与不幸，深深地体会那种不吐诉也由身体和精神中透出的凄凉与无望。&lt;/p&gt;
+
+&lt;p&gt;医生想知道她究竟看见了多少。外婆用全新的目光扫过房间，历数每件物品，精确得令人发指。医生傻了，只有我能听懂，外婆历数的物品不在病房，而在老宅卧室。有哪些东西，放在哪里，她都记得。外婆的视力此后再也没有恢复。&lt;/p&gt;
+
+&lt;p&gt;和同学们相处的四年培养了我对国家的全局观：我们彼此迥异，各有所长，合起来便是国家。&lt;/p&gt;
+
+&lt;p&gt;我在外公外婆家听过无数次，“千日战争”后，保守党和自由党的唯一区别是：自由党不想让人看见，因此去望五点钟的弥撒；保守党为了让人看见，因此去望八点钟的弥撒。&lt;/p&gt;
+
+&lt;p&gt;照此下去，我的幸福将不属于我自己，只能用来回报父母无尽的溺爱、莫名的担忧和乐观的期望。&lt;/p&gt;
+
+&lt;p&gt;如果无法让我热血沸腾，无法为我猛地推开神秘世界之窗，无法让我发现世界，无法在孤寂、爱恋、欢聚、失恋时陪伴我忧伤的心，诗歌于我，何用之有？&lt;/p&gt;
+
+&lt;p&gt;那是一种彰显历史公正的行为，纪念没有名字的英雄们，纪念的不是他们活过的人生，而是他们共同的命运。&lt;/p&gt;
+
+&lt;p&gt;我仍然是个没受过什么教育但手不释卷的读者，读的最多的是诗，包括烂诗。甚至情绪跌至低谷时，我都坚信烂诗早晚会带我邂逅好诗。&lt;/p&gt;
+
+&lt;p&gt;我是个典型的加勒比人，伤感、腼腆、重隐私，所有关乎隐私的问题我都会毫不客气地挡回去。我坚信自己的厄运与生俱来、无可补救，特别是财运和桃花运，命里没有便是无。但我不在乎，因为写好文章不需要好运气。我对荣誉、金钱、衰老一概不感兴趣，我笃信自己会年纪轻轻地死在街头。&lt;/p&gt;
+
+&lt;p&gt;生活中的糟糕事，写进书里也不会好。&lt;/p&gt;
+
+&lt;p&gt;他告诉我，那是他第一次吸毒，吸完他就对自己说：“妈的！这辈子除了这个，别的我都不想干。”在之后的四十年里，他前途渺茫，热情不减，自始至终履行了吸毒至死的诺言。&lt;/p&gt;
+
+&lt;p&gt;加勒比地区母亲们的想法根深蒂固：波哥大女人勾搭沿海男人，不为爱情，只为实现她们傍海而居的梦想。&lt;/p&gt;
+
+&lt;p&gt;直到坐在打字机前，喘过气来，我才发觉，长久以来，我既想见她，又怕与她终生厮守。&lt;/p&gt;
+
+&lt;h3 id=&#34;巨人的陨落&#34;&gt;《巨人的陨落》&lt;/h3&gt;
+
+&lt;p&gt;一战背景下，几个家族的故事，虚实结合。&lt;/p&gt;
+
+&lt;h3 id=&#34;人间失格&#34;&gt;《人间失格》&lt;/h3&gt;
+
+&lt;p&gt;失格，失去人格？&lt;/p&gt;
+
+&lt;h3 id=&#34;明朝那些事儿-7卷&#34;&gt;《明朝那些事儿 7卷》&lt;/h3&gt;
+
+&lt;p&gt;把历史写的很有趣，读完对明朝历史的脉络有大概了解。&lt;/p&gt;
+
+&lt;h3 id=&#34;万历十五年&#34;&gt;《万历十五年》&lt;/h3&gt;
+
+&lt;p&gt;对万历年间几个典型人物的描写，深刻揭露了当时社会的特点，是毫无保留的崇尚儒家道德，还是联系实际寻求阴阳的结合？&lt;/p&gt;
+
+&lt;h3 id=&#34;解忧杂货店&#34;&gt;《解忧杂货店》&lt;/h3&gt;
+
+&lt;p&gt;虽说有些推理的成分，但是读完印象还是停留在其中讲述的故事，浪矢爷爷并不是知道一切问题的答案，只是不断的挖掘我们真实的内心。&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>2016阅读书单</title>
+      <link>http://vonzhou.com/2016/2016-read-book/</link>
+      <pubDate>Sat, 10 Dec 2016 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2016/2016-read-book/</guid>
+      <description>&lt;p&gt;2016这一年接近尾声了，列出今年阅读的书。&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://book.douban.com/subject/1770782/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;卡勒德·胡赛尼《追风筝的人》&lt;/a&gt;    &amp;ndash;3.8
+&amp;gt; 政治，宗教，文化，种族让那个时代生活在阿富汗的人遭遇了毁灭，让我想起之前读《我们最幸福》里面朝鲜人民的种种。真正的救赎是去承担自己的责任，为你，千千万万遍。&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://book.douban.com/subject/26382433/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;伍绮诗 《无声告白》&lt;/a&gt;          &amp;ndash;3.17
+&amp;gt; 是的，深深的沉浸到了这本书，纠结的太多，言表的太少，期望有时候会成为枷锁，爱有时候会迷失方向，不要让孩子去实现我们的未曾实现。&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://book.douban.com/subject/25826578/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;池建强 《MacTalk 人生元编程》&lt;/a&gt;    -3.14
+&amp;gt; 喜欢MAC君的文采，很多话题都贴近，我在想何谓人生元编程？&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;a href=&#34;http://book.douban.com/subject/26576861/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《最好的告别》&lt;/a&gt;   &amp;ndash;1.19
+&amp;gt; 面对衰老，你的死亡观是怎样的？是谋求一息尚存还是生活的意义，当无法选择时我们需要和他进行端点讨论，不要太相信现代医学提供的默认选项，我们要不断的寻求适合自己的选项。&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;a href=&#34;http://book.douban.com/subject/10794070/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《心外传奇》&lt;/a&gt;        &amp;ndash;1.24
+&amp;gt; 讲述了心脏外科领域那些先锋追逐梦想的历程，光荣与牺牲，最终揭开了心脏的奥秘，不乏科学与道德的争论，虽然里面的专业术语理解不到位，但是也了解了心脏的结构，相关的术式演变。&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://book.douban.com/subject/1483894/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;罗贯中《三国演义》&lt;/a&gt;    &amp;ndash;3.4
+&amp;gt; 那几日读到上瘾，热血沸腾，看到孔明归天，就一下子没有了动力。&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;a href=&#34;http://book.douban.com/subject/5345682/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;许晓斌 《Maven实战》&lt;/a&gt;    -3.25
+&amp;gt; 有些东西更加清晰了，不止停留在用tool的阶段&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://book.douban.com/subject/26658379/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;KK《必然》&lt;/a&gt;    -3.27
+&amp;gt; cognfiying, flowing, screening, accessing, sharing, filtering, remixing, interacting, tracking 的时代已经开始，值得思考。&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://book.douban.com/subject/1858513/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;月亮与六便士&lt;/a&gt;   -4.20
+&amp;gt; 讲述了斯特里克兰德对艺术的不懈追求，是以保罗·高更为原型创作的小说。虽然情节不复杂，但是读起来优美，长于人物的描写。&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://book.douban.com/subject/24845582/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;卡勒德·胡赛尼 《群山回唱》&lt;/a&gt;  - 4.28
+&amp;gt; 时间从五十年代到2010年，有阿富汗的历史动乱，阿卜杜拉和帕丽从小时候的分散，到最后见面了，但是有些空缺却永远难以弥补。&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://github.com/vonzhou/SpringInAction3&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;Craig Walls《Spring实战 3rd》&lt;/a&gt;  -4.26
+&amp;gt; 在阅读本书的过程中本着小步前进的原则，争取把每个示例跑通，去年断断续续看过，但是这次才算完整消化，不过Spring之旅才刚刚开始。&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://github.com/vonzhou/SpringMVCTutorial&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;Paul Deck《Spring MVC 学习指南》&lt;/a&gt; -7.17
+&amp;gt; 比较简单清晰，看完之后至少知道该如何下手，但是深度方面需要自己的积淀。&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Jeff Atwood《程序员的修炼-从优秀到卓越》 -5.9
+&amp;gt; 作者的博文集合，多开拓自己的视野，不止编码，设计，与人沟通，多读书。&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;《HTTP权威指南》 -5.18
+&amp;gt; 讲的非常好，理论上对HTTP有了全面的认识，接下来就需要在实践中巩固。&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://github.com/vonzhou/LearnYouHaskellForGreatGood&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;Learn You a Haskell For Great Good(Haskell趣学指南)&lt;/a&gt;  -6.3
+&amp;gt; 很久之前看英文版，读至后面三分之一处就放下了，而且理解不了。最近把中文版从头到尾阅读了一遍，部分仍然没有理解，接下来需要在实践中不断体会,对于有些概念要看Wikipedia。&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://book.douban.com/subject/4262627/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《重构》&lt;/a&gt; -6.20
+&amp;gt; 以前对这本书是抱着敬畏之情，阅读起来也是非常清爽，比《代码大全》的抽象度低一点。认知了常用的重构手法，当实际进行操作的时候就会联想到这些术语。&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://book.douban.com/subject/1085799/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;陈忠实《白鹿原》&lt;/a&gt; -6.24
+&amp;gt; 演义了白鹿两家几个人物在近代历史进程中各自不同的发展。能把握住什么事必须说，设么事不能说的人，才是真正的男人。&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;[《周鸿祎自述：我的互联网方法论》]()  -8.7
+&amp;gt; 反复强调的是注重用户体验，从小处突破，敢于失败，多次提到乔布斯和《硅谷热》。&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://book.douban.com/subject/5366248/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《你一定爱读的极简欧洲史》&lt;/a&gt; -11.12
+&amp;gt; 在手机上断断续续看完，欧洲历史的入门，有了一些大局的了解，但是细节需要再看其他的书。&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://github.com/vonzhou/JavaConcurrencyInPractice&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《Java并发编程实战》&lt;/a&gt; -11.20
+&amp;gt; 之前有看过，但是理解不够，这次系统的阅读一遍，同时结合代码，有了更深刻的把握，很多技巧值得自己实践，要不断结合自己的实际应用去精进，包括阅读源码。&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://book.douban.com/subject/1138768/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《深入Java虚拟机 第二版》&lt;/a&gt;
+&amp;gt; 算是第二遍阅读，需要自己的实践和体会，特别是GC算法，class文件结构，执行过程，类加载等。&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;《如何阅读一本书》-12.10
+&amp;gt; 读却不懂阅读的技巧，所以阅读带来的理解力的提高才极低。读了这本书，对阅读有了更规范的认识，该快读的书绝不沉溺，对该精读的确则该慢慢咀嚼，一本书读完后也该对全文的架构主旨有所体悟，有疑问的地方该得到解答，需要深入的主题则该针对性的进行主题阅读，向不同的作者寻求关于某个议题的解答，然后从中提炼出自己的理解，而不是娱乐性的获取资讯，阅读该是件严肃的事，不同的书有不同的阅读态度。&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
       <title>RocketMQ源码阅读 -  从消息发送到存储</title>
       <link>http://vonzhou.com/2016/rocketmq-from-msg-send-to-store/</link>
       <pubDate>Tue, 30 Aug 2016 00:00:00 +0000</pubDate>
@@ -984,6 +1777,169 @@ SourceFile: &amp;quot;ColorEnum.java&amp;quot;
 &lt;h2 id=&#34;小结&#34;&gt;小结&lt;/h2&gt;
 
 &lt;p&gt;这次代码阅读主要着眼于消息的发送过程和Broker上的存储，其他方面的细节有待深入。&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>2015阅读的书单</title>
+      <link>http://vonzhou.com/2016/2015-read-book/</link>
+      <pubDate>Wed, 06 Apr 2016 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2016/2015-read-book/</guid>
+      <description>
+
+&lt;h2 id=&#34;剑指offer-3-30&#34;&gt;《剑指offer》  -3.30&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;找实习的阶段过了一遍，现在看来都忘了&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;redis设计与实现-4-15&#34;&gt;《Redis设计与实现》- 4.15&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;完整读完，收获很大，需要结合代码深入&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;算法-4th-4-2&#34;&gt;《算法 4th》  -4.2&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;结合公开课看了大部分，理解了更多&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;深度解析sdn-张卫峰著-4-16&#34;&gt;《深度解析SDN / 张卫峰著 》      -4.16&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;大致浏览了下,明确大场景！&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;破坏之王-ddos攻击与防范深度剖析-4-30&#34;&gt;《破坏之王-DDoS攻击与防范深度剖析》    -4.30&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;DoS科普！&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;大型网站技术架构-核心原理与技术分析-李智慧-5-2&#34;&gt;《大型网站技术架构.核心原理与技术分析 李智慧》     &amp;ndash;5.2&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;五一两天过了一遍该书  ，宏观上有了眼界的开阔。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;masters-of-doom-5-8&#34;&gt;《Masters of Doom》   &amp;ndash;5.8&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;一口气读完，很吸引人，激动人心，对技术的着迷，用技术创造世界！&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;小王子-5-8&#34;&gt;《小王子》    &amp;ndash;5.8&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;很小的一本书，驯服就是发生联系，真正美好的是看不见的一面。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;活着-余华-5-10&#34;&gt;《活着-余华》    &amp;ndash;5.10&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;连续几天晚上读完，感动至哭，活着，哪怕贫穷。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;动物庄园-5-17&#34;&gt;《动物庄园》  &amp;ndash;5.17&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;寓意深刻，最终分不清他们是猪，还是人？所谓的平等真的存在吗？&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;crypto101-5-19&#34;&gt;《Crypto101》   &amp;mdash;   5.19&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;虽然是英文书，但是写的很好懂，明确了技术存在的原因，该是自己入门密码学的第一本书，然后再具体的实践，会关注更新后的版本！&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;王小波-沉默的大多数人-6-2&#34;&gt;王小波《沉默的大多数人》   &amp;ndash; 6.2&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;做一个有趣的人，敢于有自己的想法，不只是苟且活着！&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;深入理解java虚拟机-周志明-6-7&#34;&gt;《深入理解Java虚拟机 周志明》   &amp;ndash;6.7&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;都说Java程序员不着地，但是我是深究底层的人！看完这本书虽不能让你说懂JVM，但是至少可以让你知道整体的生态，可以自己去深入学习，这方面的书籍并不多，需要看规范文档。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;奥威尔-1984-http-book-douban-com-subject-4820710-6-13&#34;&gt;&lt;a href=&#34;http://book.douban.com/subject/4820710/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;奥威尔《1984》&lt;/a&gt;     &amp;ndash;6.13&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;“战争即和平，自由即奴役，无知即力量”，权利的机器不论哪个朝代都是存在的，所幸1984没有成为现实！&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;head-first-servlet-jsp-http-book-douban-com-subject-3223139-6-14&#34;&gt;&lt;a href=&#34;http://book.douban.com/subject/3223139/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《Head First Servlet &amp;amp; JSP 》&lt;/a&gt;   &amp;ndash;6.14&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;虽然之前写过web程序，但是有些东西并没有理清，这本书很形象生动，引人入胜，看完之后各个组件和流程就非常清晰了：MVC架构，属性监听器，JSP脚本，EL，JSTL，标记文件，WEB部署的架构，过滤器等等，感受到了约定大于配置。当然这只是入门，需要多看多写，才会有发言权。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;java加密与解密的艺术-2nd-5-17-6-15&#34;&gt;《Java加密与解密的艺术 2nd》    &amp;ndash;5.17-6.15&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;没有关于算法如何实现的分析，更没有各种算法的比较抉择，如果纯粹想用java实现的话，可以自己看API，所以这本书没有体现所谓的艺术，很多冗余代码的堆砌，虽然也有参考价值。这本书大概看了一大半，没有应用的驱动，显得枯燥，倒不如看看具体算法的实现，当用到某种算法的时候再寻求API是如何实现的。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;重来-rework-http-book-douban-com-subject-5320866-6-21&#34;&gt;&lt;a href=&#34;http://book.douban.com/subject/5320866/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《重来 Rework》&lt;/a&gt;                         &amp;ndash;6.21&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;这是第二遍阅读，这本书简洁优美，里面讲述的也是作者真实的创业感受，无论创业与否，都会从中学到很多，有了灵感就应该行动起来，知道自己要做什么，才会勇敢说不，甘于低微，吸引属于自己的观众。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;数据之巅-涂子沛-8-19&#34;&gt;《数据之巅.涂子沛》 &amp;ndash;8.19&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;这两天一口气把该书读完了，从美国的几个历史阶段中阐述了数据的价值，人口普查，统计分析，抽样，可视化，以及美国政府的信息公开，都是值得我们学习的。又是一个新的浪潮，是跟随还是引领，需要数据科学的普及。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;异类-http-book-douban-com-subject-3688489-8-22&#34;&gt;&lt;a href=&#34;http://book.douban.com/subject/3688489/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《异类》&lt;/a&gt; &amp;ndash;8.22&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;一万小时定律？机遇对成功的重要性？现在所做的任何事件点滴积累，串在一起，决定了我们的明天是成功还是失败。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;平凡的世界-http-book-douban-com-subject-1084165-10-31&#34;&gt;&lt;a href=&#34;http://book.douban.com/subject/1084165/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《平凡的世界》&lt;/a&gt;  &amp;ndash;10.31&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;每个角色都在自己的范围内努力做着不平凡的事情，有着黄土地的烙印，也不放弃见识更广阔的世界。只能把艰辛的劳动看作是生命的必要，即使没有收获的指望&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;岛上书店-http-book-douban-com-subject-26340138-11-29&#34;&gt;&lt;a href=&#34;http://book.douban.com/subject/26340138/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《岛上书店》&lt;/a&gt;   &amp;ndash;11.29&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;简单却有触动，或许正如书中所说，有些书每个阶段读出不同的味道，读人也是如此吧。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;网易掌门人丁磊-http-book-douban-com-subject-4001603-12-8&#34;&gt;&lt;a href=&#34;http://book.douban.com/subject/4001603/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《网易掌门人丁磊》&lt;/a&gt;      &amp;ndash;12.8&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;大概了解网易&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;人类简史-http-book-douban-com-subject-25985021-from-tag-12-12&#34;&gt;&lt;a href=&#34;http://book.douban.com/subject/25985021/?from=tag&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《人类简史》&lt;/a&gt;  &amp;ndash;12.12&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;很不错，文采华丽&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;我们最幸福-http-book-douban-com-subject-26364714-12-21&#34;&gt;&lt;a href=&#34;http://book.douban.com/subject/26364714/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;我们最幸福&lt;/a&gt;    &amp;ndash; 12.21&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;想到了奥威尔的1984，每个时代都有其黑暗，但是最怕的是生活在自己的谎言中，不愿承认自己的弱点。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;黑客-12-28&#34;&gt;[黑客 ]()       &amp;ndash;12.28&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;么是黑客道德？追求信息共享，不断获得突破的信仰。当黑客道德和现实世界冲突的时候如何决策？一个企业有这种选择，对于个人说同样有这个问题。理想主义和社交，商业化之间的矛盾。
+从MIT的铁路俱乐部，到微型电脑的商业化，到如今的万物互联，从亚文化发展为一种主流文化，技术改变了世界。
+那个时代的黑客，有一种特立独行的姿态，追求自己的真正所爱，构建自己的文化，然后推动一个行业，改变每个人的生活，从硬件黑客，到系统黑客，现在很少能做到那时 的激情，知识快速的迭代产品。
+每个人都有各自的特点，然后做出不同的转变，曾今黑客道德和商业模式的矛盾斗争，或许会慢慢找到和谐的融合方式，用技术撑起一个商业帝国。&lt;/p&gt;
+&lt;/blockquote&gt;
 </description>
     </item>
     
