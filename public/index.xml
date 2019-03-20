@@ -6,8 +6,128 @@
     <description>Recent content in 编程之路 on 编程之路</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Mon, 18 Mar 2019 10:23:42 +0800</lastBuildDate>
+    <lastBuildDate>Wed, 20 Mar 2019 00:00:00 +0000</lastBuildDate>
     <atom:link href="/" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>JDK 12新特性：Switch表达式</title>
+      <link>http://vonzhou.com/2019/java12-switch-expression/</link>
+      <pubDate>Wed, 20 Mar 2019 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2019/java12-switch-expression/</guid>
+      <description>
+
+&lt;p&gt;JDK 12 GA在2019.3.19发布，其中一项新特性是JEP 325：Switch表达式（Switch Expressions）。学习下。&lt;/p&gt;
+
+&lt;p&gt;如果知道Scala中的模式匹配，就很容易理解Switch表达式。&lt;/p&gt;
+
+&lt;p&gt;本文完整代码见&lt;a href=&#34;https://github.com/vonzhou/learning-java12/blob/master/src/main/java/com/vonzhou/learningjava12/SwitchDemo.java&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;SwitchDemo &lt;/a&gt;。&lt;/p&gt;
+
+&lt;h2 id=&#34;传统的switch语句&#34;&gt;传统的Switch语句&lt;/h2&gt;
+
+&lt;p&gt;传统的Switch语句（switch statement）我们并不陌生，在每个case分支中实现对应的处理逻辑。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private static void switchStatement(WeekDay day) {
+    int numLetters = 0;
+    switch (day) {
+        case MONDAY:
+        case FRIDAY:
+        case SUNDAY:
+            numLetters = 6;
+            break;
+        case TUESDAY:
+            numLetters = 7;
+            break;
+        case THURSDAY:
+        case SATURDAY:
+            numLetters = 8;
+            break;
+        case WEDNESDAY:
+            numLetters = 9;
+            break;
+    }
+    System.out.println(&amp;quot;1. Num Of Letters: &amp;quot; + numLetters);
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Switch语句的特点是每个case分支块是没有返回值的，而表达式（expression）的特点是有返回值。&lt;/p&gt;
+
+&lt;h2 id=&#34;switch表达式&#34;&gt;Switch表达式&lt;/h2&gt;
+
+&lt;h3 id=&#34;模式匹配-patrern-matching&#34;&gt;模式匹配（Patrern Matching）&lt;/h3&gt;
+
+&lt;p&gt;上述“计算字符个数”的例子使用Switch表达式，代码如下：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private static void switchExpression(WeekDay day) {
+    int numLetters = switch (day) {
+        case MONDAY, FRIDAY, SUNDAY -&amp;gt; 6;
+        case TUESDAY -&amp;gt; 7;
+        case THURSDAY, SATURDAY -&amp;gt; 8;
+        case WEDNESDAY -&amp;gt; 9;
+    };
+
+    System.out.println(&amp;quot;2. Num Of Letters: &amp;quot; + numLetters);
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Switch表达式目前属于预览（Preview）功能，所以在编译运行的时候需要通过&lt;code&gt;--enable-preview&lt;/code&gt;选项设置来开启，具体方法如下：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;D:\GitHub\learning-java12\src\main\java
+λ D:\dev\jdk-12\bin\javac.exe --enable-preview --release 12 com\vonzhou\learningjava12\SwitchDemo.java
+注: com\vonzhou\learningjava12\SwitchDemo.java 使用预览语言功能。
+注: 有关详细信息，请使用 -Xlint:preview 重新编译。
+
+D:\GitHub\learning-java12\src\main\java
+λ D:\dev\jdk-12\bin\java.exe --enable-preview com.vonzhou.learningjava12.SwitchDemo
+1. Num Of Letters: 6
+2. Num Of Letters: 9
+3. Num Of Letters: 8
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;break-可以返回值&#34;&gt;break 可以返回值&lt;/h3&gt;
+
+&lt;p&gt;Switch表达式中也支持break有返回值。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private static void switchExpressionBreakReturn(WeekDay day) {
+    int numLetters = switch (day) {
+        case MONDAY:
+        case FRIDAY:
+        case SUNDAY:
+            break 6;
+        case TUESDAY:
+            break 7;
+        case THURSDAY:
+        case SATURDAY:
+            numLetters = 8;
+            break 8;
+        case WEDNESDAY:
+            break 9;
+    };
+
+    System.out.println(&amp;quot;3. Num Of Letters: &amp;quot; + numLetters);
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;scala中的模式匹配&#34;&gt;Scala中的模式匹配&lt;/h2&gt;
+
+&lt;p&gt;Scala中实现模式匹配的语法是Match表达式，其实可以看做是Java中的Switch表达式。例如判断一个列表的第一个元素是否是0，可以实现为：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-Scala&#34;&gt;def startsWithZero(expr: List[Int]) =
+expr match {
+  case List(0, _*) =&amp;gt; println(&amp;quot;found it&amp;quot;)
+  case _ =&amp;gt;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;总结&#34;&gt;总结&lt;/h2&gt;
+
+&lt;p&gt;Switch表达式可以使得写出的代码更加简洁安全（more concisely and safely）。&lt;/p&gt;
+
+&lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
+
+&lt;p&gt;&lt;a href=&#34;https://openjdk.java.net/jeps/325&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;JEP 325: Switch Expressions (Preview)&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>关于我</title>
