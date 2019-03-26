@@ -144,10 +144,10 @@ expr match {
     
     <item>
       <title>波兰来客</title>
-      <link>http://vonzhou.com/2019/%E6%B3%A2%E5%85%B0%E6%9D%A5%E5%AE%A2/</link>
+      <link>http://vonzhou.com/2019/bo-lan-lai-ke/</link>
       <pubDate>Fri, 15 Mar 2019 11:03:31 +0800</pubDate>
       
-      <guid>http://vonzhou.com/2019/%E6%B3%A2%E5%85%B0%E6%9D%A5%E5%AE%A2/</guid>
+      <guid>http://vonzhou.com/2019/bo-lan-lai-ke/</guid>
       <description>&lt;p&gt;很喜欢这首诗。&lt;/p&gt;
 
 &lt;pre&gt;&lt;code&gt;波兰来客 
@@ -280,6 +280,65 @@ while (true) {
 &lt;h2 id=&#34;filter&#34;&gt;Filter&lt;/h2&gt;
 
 &lt;p&gt;上述只是用了PageFilter实现分页，如果需要根据列的各种条件进行查询，就需要用到FilterList，或者自己实现Filter。&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>记一次使用KafkaProducer引发的Full GC问题</title>
+      <link>http://vonzhou.com/2019/kafka-producer-fullgc-story/</link>
+      <pubDate>Fri, 01 Mar 2019 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2019/kafka-producer-fullgc-story/</guid>
+      <description>
+
+&lt;h2 id=&#34;场景&#34;&gt;场景&lt;/h2&gt;
+
+&lt;p&gt;一个模块接收数据，然后投到Kafka中，实现削峰填谷。突然有一天频繁出现Full GC问题。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/kafka-producer-fullgc-story-1.gif&#34; alt=&#34;FullGC情况&#34; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;初步尝试&#34;&gt;初步尝试&lt;/h2&gt;
+
+&lt;p&gt;查看JVM的配置，发现最大堆配置的太小，推测：堆内存不足，导致频繁gc，内存不足，导致往kafka发送消息的时候阻塞，所以线程都会卡住。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;15302 com.xxxx.AppRunner -Dlog.dir=/path/to/logs -Xms1024m -Xmx1024m -XX:MaxPermSize=256m -verbose:gc -XX:+PrintGCDetails
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;调整堆大小配置后，Full GC 问题并没有得到缓解。&lt;/p&gt;
+
+&lt;h2 id=&#34;mat分析&#34;&gt;MAT分析&lt;/h2&gt;
+
+&lt;p&gt;heap dump出现使用MAT分析。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/kafka-producer-fullgc-story-2.png&#34; alt=&#34;MAT分析&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;这里的大对象都是我们发送的批量消息对象，推测：是不是&lt;code&gt;batch.size&lt;/code&gt;设置的过大？（设置的是40MB）&lt;/p&gt;
+
+&lt;h2 id=&#34;解决方法&#34;&gt;解决方法&lt;/h2&gt;
+
+&lt;p&gt;调小&lt;code&gt;batch.size&lt;/code&gt;，设置为20MB：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;props.put(&amp;quot;buffer.memory&amp;quot;, 100 * 1024 * 1024);
+// 批量发送的字节大小， 20MB
+props.put(&amp;quot;batch.size&amp;quot;, 2 * 10 * 1024 * 1024);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;最终问题得以解决，连Minor GC也很少了：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/kafka-producer-fullgc-story-3.png&#34; alt=&#34;GC趋势图&#34; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;kafkaproducer消息发送过程&#34;&gt;KafkaProducer消息发送过程&lt;/h2&gt;
+
+&lt;p&gt;KafkaProducer发送消息的过程是：消息追加到一个内部的队列中，有一个异步线程负责从中取出，将消息发送给Broker。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/kafka-producer-fullgc-story-4.jpg&#34; alt=&#34;Producer发送消息流程&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;在了解kafka消息发送过程的基础上，通过MAT大对象图还可以看到：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;buffer.memory&lt;/code&gt;配置的是客户端发送消息时&lt;code&gt;BufferPool&lt;/code&gt;的内存大小，至少要比&lt;code&gt;batch.size&lt;/code&gt;大，否则连一个&lt;code&gt;RecordBatch&lt;/code&gt;也放不进去。&lt;/li&gt;
+&lt;li&gt;实际占用的内存可能是&lt;code&gt;buffer.memory&lt;/code&gt;的好几倍（4~5倍？），流转多个环节，底层存储都是&lt;code&gt;ByteBuffer&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
 </description>
     </item>
     
@@ -520,6 +579,101 @@ private static void copyProperties(Object source, Object target, Class&amp;lt;?&
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;&lt;code&gt;isAssignable&lt;/code&gt;同时也会考虑原始类型及包装类型的情况，比如 int a 可以被拷贝到另一个对象的 Integer a 中。&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>JVM垃圾回收总结</title>
+      <link>http://vonzhou.com/2019/jvm-gc-summary/</link>
+      <pubDate>Thu, 21 Feb 2019 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2019/jvm-gc-summary/</guid>
+      <description>
+
+&lt;h2 id=&#34;1-垃圾回收算法&#34;&gt;1. 垃圾回收算法&lt;/h2&gt;
+
+&lt;h3 id=&#34;mark-sweep-标记-清除-算法&#34;&gt;Mark-Sweep(标记-清除)算法&lt;/h3&gt;
+
+&lt;h3 id=&#34;复制算法&#34;&gt;复制算法&lt;/h3&gt;
+
+&lt;h3 id=&#34;mark-compact-标记-整理-算法&#34;&gt;Mark-Compact(标记-整理)算法&lt;/h3&gt;
+
+&lt;h3 id=&#34;分代收集算法&#34;&gt;分代收集算法&lt;/h3&gt;
+
+&lt;h2 id=&#34;2-垃圾收集器&#34;&gt;2. 垃圾收集器&lt;/h2&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/gc-collectors.jpg&#34; alt=&#34;gc-collectors&#34; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&#34;新生代&#34;&gt;新生代&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Serial&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;ParNew&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;ParNew是Serial的多线程版本， 只有 Serial，ParNew能和CMS配合使用。ParNew是使用CMS后的默认新生代收集器，可以使用&lt;code&gt;-XX:+UseParNewGC&lt;/code&gt;强制指定。&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Parallel Scavenge&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Parallel Scavenge收集器，吞吐量优先，通过参数可以控制最大垃圾收集的停顿时间（-XX:MaxGCPauseMills）及直接设置吞吐量大小（-XX:GCTimeRatio）。也可以开启GC自适应调节策略（GC Ergonomics）。&lt;/p&gt;
+
+&lt;p&gt;使用&lt;code&gt;XX:+UseParallelGC&lt;/code&gt;开启，JDK1.4.1引入。PS只能和Serial Old，ParOld搭配使用。&lt;/p&gt;
+
+&lt;p&gt;Java 6，7，8 默认的收集器是Parallel GC（PS + Parallel Old），使用&lt;code&gt;PrintFlagsFinal&lt;/code&gt;可以看到：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;$ ./bin/java -XX:+PrintFlagsFinal
+bool UseParallelGC                            := true                                {product}
+bool UseParallelOldGC                          = true                                {product}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;老年代&#34;&gt;老年代&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Serial Old&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Parallel Old&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Parallel Old收集器是PS的老年代版本，使用多线程和“标记-整理”。&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;XX:+UseParallelOldGC&lt;/code&gt;开启后，也会自动设置&lt;code&gt;XX:+UseParallelGC&lt;/code&gt;，JDK5.0 update 6引入。&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;CMS&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;CMS收集器，以最短回收停顿时间，服务响应速度为目标，采用标记-清除算法。使用&lt;code&gt;-XX:+UseConcMarkSweepGC&lt;/code&gt;开启。&lt;/p&gt;
+
+&lt;h3 id=&#34;g1收集器&#34;&gt;G1收集器&lt;/h3&gt;
+
+&lt;p&gt;JDK7引入的&lt;/p&gt;
+
+&lt;p&gt;G1收集器的Region，其他收集器新生代和老年代之间的对象引用，JVM都是使用Remembered Set来避免全堆扫描。&lt;/p&gt;
+
+&lt;p&gt;Java 9,10默认的GC Collector是G1.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&#34;https://www.oracle.com/webfolder/technetwork/tutorials/obe/java/G1GettingStarted/index.html&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;Getting Started with the G1 Garbage Collector&lt;/a&gt;&lt;/p&gt;
+
+&lt;h4 id=&#34;zgc&#34;&gt;ZGC&lt;/h4&gt;
+
+&lt;p&gt;JDK11引入&lt;/p&gt;
+
+&lt;p&gt;要完成的目标是：控制Java的垃圾回收时长在10ms以内，绝对不超过10ms，并且使用了该垃圾回收策略之后，吞吐对比当前Java缺省的垃圾回收策略G1，下降不超过15%&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&#34;https://www.opsian.com/blog/javas-new-zgc-is-very-exciting/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;Java&amp;rsquo;s new Z Garbage Collector (ZGC) is very exciting&lt;/a&gt;&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;TODO 使用不同的GC算法看GC日志&lt;/p&gt;
+
+&lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
+
+&lt;p&gt;&lt;a href=&#34;https://blogs.oracle.com/jonthecollector/our-collectors&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;Our Collectors&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&#34;http://www.fasterj.com/articles/oraclecollectors1.shtml&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;Oracle JVM Garbage Collectors Available From JDK 1.7.0_04 And After&lt;/a&gt;&lt;/p&gt;
 </description>
     </item>
     
@@ -1044,6 +1198,229 @@ SourceFile: &amp;quot;ColorEnum.java&amp;quot;
     </item>
     
     <item>
+      <title>大面积offset commit失败，导致不停Rebalance，大量消息重复消费的问题</title>
+      <link>http://vonzhou.com/2019/kafka-consumer-rebalance-jitter/</link>
+      <pubDate>Wed, 30 Jan 2019 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2019/kafka-consumer-rebalance-jitter/</guid>
+      <description>
+
+&lt;h2 id=&#34;场景&#34;&gt;场景&lt;/h2&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/kafka-consumer-rebalance-jitter-1.png&#34; alt=&#34;消费流程&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;使用spring-kafka，Listener方法中把收到的消息投递到Disruptor队列中，然后Disruptor单Consumer把消息插入到DB中。&lt;/p&gt;
+
+&lt;p&gt;采用的手动ACK。&lt;/p&gt;
+
+&lt;h2 id=&#34;严重问题的出现&#34;&gt;严重问题的出现&lt;/h2&gt;
+
+&lt;p&gt;新版本发布之时，接到大量的报警异常，Consumer不停的进行Rebalance，不停的进行分区重分配，offset提交失败。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;2019-01-29 23:59:24 [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-kafka-consumer-1] ERROR o.a.k.c.c.i.ConsumerCoordinator.handle 550 - Error UNKNOWN_MEMBER_ID occurred while committing offsets for group xxxxx_group
+2019-01-29 23:59:24 [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-kafka-consumer-1] ERROR o.a.k.c.c.i.ConsumerCoordinator.onJoinPrepare 254 - User provided listener org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer$1 failed on partition revocation:
+org.apache.kafka.clients.consumer.CommitFailedException: Commit cannot be completed due to group rebalance
+    at org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$OffsetCommitResponseHandler.handle(ConsumerCoordinator.java:552)
+    at org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$OffsetCommitResponseHandler.handle(ConsumerCoordinator.java:493)
+    at org.apache.kafka.clients.consumer.internals.AbstractCoordinator$CoordinatorResponseHandler.onSuccess(AbstractCoordinator.java:665)
+    at org.apache.kafka.clients.consumer.internals.AbstractCoordinator$CoordinatorResponseHandler.onSuccess(AbstractCoordinator.java:644)
+    at org.apache.kafka.clients.consumer.internals.RequestFuture$1.onSuccess(RequestFuture.java:167)
+    at org.apache.kafka.clients.consumer.internals.RequestFuture.fireSuccess(RequestFuture.java:133)
+    at org.apache.kafka.clients.consumer.internals.RequestFuture.complete(RequestFuture.java:107)
+    at org.apache.kafka.clients.consumer.internals.ConsumerNetworkClient$RequestFutureCompletionHandler.onComplete(ConsumerNetworkClient.java:380)
+    at org.apache.kafka.clients.NetworkClient.poll(NetworkClient.java:274)
+    at org.apache.kafka.clients.consumer.internals.ConsumerNetworkClient.clientPoll(ConsumerNetworkClient.java:320)
+    at org.apache.kafka.clients.consumer.internals.ConsumerNetworkClient.poll(ConsumerNetworkClient.java:213)
+    at org.apache.kafka.clients.consumer.internals.ConsumerNetworkClient.poll(ConsumerNetworkClient.java:193)
+    at org.apache.kafka.clients.consumer.internals.ConsumerNetworkClient.poll(ConsumerNetworkClient.java:163)
+    at org.apache.kafka.clients.consumer.internals.ConsumerCoordinator.commitOffsetsSync(ConsumerCoordinator.java:358)
+    at org.apache.kafka.clients.consumer.KafkaConsumer.commitSync(KafkaConsumer.java:968)
+    at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.ackImmediate(KafkaMessageListenerContainer.java:578)
+    at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.manualAck(KafkaMessageListenerContainer.java:559)
+    at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.handleManualAcks(KafkaMessageListenerContainer.java:550)
+    at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.processCommits(KafkaMessageListenerContainer.java:624)
+    at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.stopInvokerAndCommitManualAcks(KafkaMessageListenerContainer.java:504)
+    at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.access$900(KafkaMessageListenerContainer.java:221)
+    at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer$1.onPartitionsRevoked(KafkaMessageListenerContainer.java:297)
+    at org.apache.kafka.clients.consumer.internals.ConsumerCoordinator.onJoinPrepare(ConsumerCoordinator.java:250)
+    at org.apache.kafka.clients.consumer.internals.AbstractCoordinator.ensureActiveGroup(AbstractCoordinator.java:207)
+    at org.apache.kafka.clients.consumer.internals.ConsumerCoordinator.ensurePartitionAssignment(ConsumerCoordinator.java:311)
+    at org.apache.kafka.clients.consumer.KafkaConsumer.pollOnce(KafkaConsumer.java:890)
+    at org.apache.kafka.clients.consumer.KafkaConsumer.poll(KafkaConsumer.java:853)
+    at org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer.run(KafkaMessageListenerContainer.java:408)
+    at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)
+    at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+    at java.lang.Thread.run(Thread.java:745)
+2019-01-29 23:59:24 [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-kafka-consumer-1] INFO  o.a.k.c.c.i.AbstractCoordinator.handle 354 - Attempt to join group xxxxx_group failed due to unknown member id, resetting and retrying.
+2019-01-29 23:59:48 [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-kafka-consumer-4] INFO  o.a.k.c.c.i.AbstractCoordinator.handle 623 - Attempt to heart beat failed since the group is rebalancing, try to re-join group.
+2019-01-29 23:59:48 [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-kafka-consumer-4] INFO  o.s.k.l.KafkaMessageListenerContainer.onPartitionsRevoked 224 - partitions revoked:[]
+2019-01-29 23:59:48 [org.springframework.kafka.KafkaListenerEndpointContainer#1-0-kafka-consumer-2] INFO  o.a.k.c.c.i.AbstractCoordinator.handle 623 - Attempt to heart beat failed since the group is rebalancing, try to re-join group.
+2019-01-29 23:59:48 [org.springframework.kafka.KafkaListenerEndpointContainer#1-0-kafka-consumer-2] INFO  o.s.k.l.KafkaMessageListenerContainer.onPartitionsRevoked 224 - partitions revoked:[]
+2019-01-29 23:59:48 [org.springframework.kafka.KafkaListenerEndpointContainer#1-0-kafka-consumer-1] INFO  o.a.k.c.c.i.AbstractCoordinator.handle 623 - Attempt to heart beat failed since the group is rebalancing, try to re-join group.
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;offset提交失败，带来的问题就是大量的消息被重复消费，相互影响，不断恶化，导致消息堆积很严重，无法推进。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;Caused by: com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException: Duplicate record.
+    at sun.reflect.GeneratedConstructorAccessor45.newInstance(Unknown Source)
+    at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+    at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+    at com.mysql.jdbc.Util.handleNewInstance(Util.java:411)
+    at com.mysql.jdbc.Util.getInstance(Util.java:386)
+    at com.mysql.jdbc.SQLError.createSQLException(SQLError.java:1041)
+    at com.mysql.jdbc.MysqlIO.checkErrorPacket(MysqlIO.java:4120)
+    at com.mysql.jdbc.MysqlIO.checkErrorPacket(MysqlIO.java:4052)
+    at com.mysql.jdbc.MysqlIO.sendCommand(MysqlIO.java:2503)
+    at com.mysql.jdbc.MysqlIO.sqlQueryDirect(MysqlIO.java:2664)
+    at com.mysql.jdbc.ConnectionImpl.execSQL(ConnectionImpl.java:2815)
+    at com.mysql.jdbc.PreparedStatement.executeInternal(PreparedStatement.java:2155)
+    at com.mysql.jdbc.PreparedStatement.execute$sentryProxy(PreparedStatement.java:1379)
+    at com.mysql.jdbc.PreparedStatement.execute(PreparedStatement.java)
+    at com.alibaba.druid.pool.DruidPooledPreparedStatement.execute(DruidPooledPreparedStatement.java:493)
+    at org.apache.ibatis.executor.statement.PreparedStatementHandler.update(PreparedStatementHandler.java:46)
+    at org.apache.ibatis.executor.statement.RoutingStatementHandler.update(RoutingStatementHandler.java:74)
+    at org.apache.ibatis.executor.SimpleExecutor.doUpdate(SimpleExecutor.java:50)
+    at org.apache.ibatis.executor.BaseExecutor.update(BaseExecutor.java:117)
+    at org.apache.ibatis.executor.CachingExecutor.update(CachingExecutor.java:76)
+    at org.apache.ibatis.session.defaults.DefaultSqlSession.update(DefaultSqlSession.java:198)
+    at org.apache.ibatis.session.defaults.DefaultSqlSession.insert(DefaultSqlSession.java:185)
+    at sun.reflect.GeneratedMethodAccessor84.invoke(Unknown Source)
+    at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+    at java.lang.reflect.Method.invoke(Method.java:498)
+    at org.mybatis.spring.SqlSessionTemplate$SqlSessionInterceptor.invoke(SqlSessionTemplate.java:434)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;解决&#34;&gt;解决&lt;/h2&gt;
+
+&lt;p&gt;出现&lt;code&gt;Error UNKNOWN_MEMBER_ID occurred while committing offsets for group&lt;/code&gt;的原因是在kafka consumer会话超时的时候，没有能把offset提交到broker，所以要么超时时间&lt;code&gt;session.timeout.ms&lt;/code&gt;设置的太短了，要么消息的处理太慢了影响了ACK的执行，要么虽然是采用了线程池的方式，但是consumer在把消息入队的时候阻塞了，从而影响ACK。&lt;/p&gt;
+
+&lt;p&gt;所以总结下来解决的思路是：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;调参 &lt;code&gt;session.timeout.ms&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;加快消息的消费速度，我推荐的方式是单Consumer拿到消息后放到一个队列中，多线程的方式进行消费处理，设置ShutdownHook保证关闭的时候队列中的消息不丢失&lt;/li&gt;
+&lt;li&gt;采用自动commit的方式，但是有数据丢失的风险&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;在我们的场景中，问题应该出在spring-kafka-listener取消息的速度过快，阻塞在把消息投递到Disruptor中，所以还有一点：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;降低spring-kafka的并发度&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;最终的效果：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/kafka-consumer-rebalance-jitter-2.png&#34; alt=&#34;commit失败趋势图&#34; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;总结&#34;&gt;总结&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Kafka的参数常用的要知道，不要盲目设置&lt;/li&gt;
+&lt;li&gt;遇到问题无从下手的时候，看看源码，找到根源&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>IntegerCache源码阅读</title>
+      <link>http://vonzhou.com/2018/integercache/</link>
+      <pubDate>Wed, 19 Dec 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2018/integercache/</guid>
+      <description>&lt;p&gt;先从一个思考题开始，考虑下面的代码输出是什么？&lt;/p&gt;
+
+&lt;p&gt;*例1*：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public static void test1() {
+    Integer a = 1; // 等价于 Integer a = valueOf(1)
+    Integer b = 1;
+    System.out.println(a == b); 
+
+    Integer c = 128;
+    Integer d = 128;
+    System.out.println(c == d); 
+
+    System.out.println(c.equals(d)); 
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;输出：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;true
+false
+true
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;把整数常量赋值给整数包装类型，实际上调用了Integer.valueOf方法，通过指令可以看到：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/integercache-1.jpg&#34; alt=&#34;integercache-1&#34; /&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public static Integer valueOf(int i) {
+    if (i &amp;gt;= IntegerCache.low &amp;amp;&amp;amp; i &amp;lt;= IntegerCache.high)
+        return IntegerCache.cache[i + (-IntegerCache.low)];
+    return new Integer(i);
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;初次访问IntegerCache类，会触发其初始化。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private static class IntegerCache {
+    static final int low = -128;
+    static final int high;
+    static final Integer cache[];
+
+    static {
+        // high value may be configured by property
+        int h = 127;
+        String integerCacheHighPropValue =
+            sun.misc.VM.getSavedProperty(&amp;quot;java.lang.Integer.IntegerCache.high&amp;quot;);
+        if (integerCacheHighPropValue != null) {
+            try {
+                int i = parseInt(integerCacheHighPropValue);
+                i = Math.max(i, 127);
+                // Maximum array size is Integer.MAX_VALUE
+                h = Math.min(i, Integer.MAX_VALUE - (-low) -1);
+            } catch( NumberFormatException nfe) {
+                // If the property cannot be parsed into an int, ignore it.
+            }
+        }
+        high = h;
+
+        cache = new Integer[(high - low) + 1];
+        int j = low;
+        for(int k = 0; k &amp;lt; cache.length; k++)
+            cache[k] = new Integer(j++);
+
+        // range [-128, 127] must be interned (JLS7 5.1.7)
+        assert IntegerCache.high &amp;gt;= 127;
+    }
+
+    private IntegerCache() {}
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;可以看到在[low, high]范围内的数值会使用Integer缓存对象，否则新生成一个Integer对象，其中low=-128,high默认是127，但是可以通过JVM选项来配置。比如我们设置&lt;code&gt;-XX:AutoBoxCacheMax=256&lt;/code&gt;后运行例1，输出：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;true
+true
+true
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;所以在进行Integer对象相等性比较的时候，不能直接使用 == (比较的是对象的hashcode，只有[low,high]之间的Integer是相同的), 而应该使用equals方法。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public boolean equals(Object obj) {
+    if (obj instanceof Integer) {
+        return value == ((Integer)obj).intValue();
+    }
+    return false;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在进行普通对象和包装类对象的相等性判断时都应注意这一点。&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
       <title>2018阅读书单</title>
       <link>http://vonzhou.com/2018/2018-read-book/</link>
       <pubDate>Sun, 16 Dec 2018 00:00:00 +0000</pubDate>
@@ -1478,1058 +1855,1033 @@ return new DefaultPooledObject&amp;lt;Jedis&amp;gt;(jedis);
     </item>
     
     <item>
-      <title>Redis中键的过期删除策略</title>
-      <link>http://vonzhou.com/2018/redis-expire/</link>
-      <pubDate>Sun, 09 Sep 2018 00:00:00 +0000</pubDate>
+      <title>ArrayBlockingQueue与Disruptor的性能对比</title>
+      <link>http://vonzhou.com/2018/disruptor-vs-arrayblockingqueue/</link>
+      <pubDate>Sat, 01 Dec 2018 00:00:00 +0000</pubDate>
       
-      <guid>http://vonzhou.com/2018/redis-expire/</guid>
+      <guid>http://vonzhou.com/2018/disruptor-vs-arrayblockingqueue/</guid>
       <description>
 
-&lt;p&gt;Redis处理过期key的策略有定期删除和惰性删除。&lt;/p&gt;
+&lt;p&gt;虽然Disruptor采用了lock-free的算法，但并非银弹，本文以最常用的场景来测试ArrayBlockingQueue和Disruptor的作为缓存队列的性能优劣。&lt;/p&gt;
 
-&lt;p&gt;使用Redis时我们可以使用&lt;code&gt;EXPIRE&lt;/code&gt;或&lt;code&gt;EXPIREAT&lt;/code&gt;命令给key设置过期删除时间，结构体&lt;code&gt;redisDb&lt;/code&gt;中的&lt;code&gt;expires&lt;/code&gt;字典保存了所有key的过期时间，这个字典（dict）的key是一个指针，指向redis中的某个key对象，过期字典的value是一个保存过期时间的整数。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;/* Redis database representation. There are multiple databases identified
- * by integers from 0 (the default database) up to the max configured
- * database. The database number is the &#39;id&#39; field in the structure. */
-typedef struct redisDb {
-    dict *dict;                 /* The keyspace for this DB */
-    dict *expires;              /* 过期字典*/
-    dict *blocking_keys;        /* Keys with clients waiting for data (BLPOP) */
-    dict *ready_keys;           /* Blocked keys that received a PUSH */
-    dict *watched_keys;         /* WATCHED keys for MULTI/EXEC CAS */
-    struct evictionPoolEntry *eviction_pool;    /* Eviction pool of keys */
-    int id;                     /* Database ID */
-    long long avg_ttl;          /* Average TTL, just for stats */
-} redisDb;
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h2 id=&#34;设置过期时间&#34;&gt;设置过期时间&lt;/h2&gt;
-
-&lt;p&gt;不论是&lt;code&gt;EXPIRE，EXPIREAT&lt;/code&gt;，还是&lt;code&gt;PEXPIRE，PEXPIREAT&lt;/code&gt;，底层的具体实现是一样的。在Redis的key空间中找到要设置过期时间的这个key，然后将这个entry（key的指针，过期时间）加入到过期字典中。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;void setExpire(redisDb *db, robj *key, long long when) {
-    dictEntry *kde, *de;
-
-    /* Reuse the sds from the main dict in the expire dict */
-    kde = dictFind(db-&amp;gt;dict,key-&amp;gt;ptr);
-    redisAssertWithInfo(NULL,key,kde != NULL);
-    de = dictReplaceRaw(db-&amp;gt;expires,dictGetKey(kde));
-    dictSetSignedIntegerVal(de,when);
-}
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/redis-expire-1.jpg&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
-
-&lt;h2 id=&#34;过期删除策略&#34;&gt;过期删除策略&lt;/h2&gt;
-
-&lt;p&gt;如果一个key过期了，何时会被删除呢？在Redis中有两种过期删除策略：（1）惰性过期删除；（2）定期删除。接下来具体看看。&lt;/p&gt;
-
-&lt;h2 id=&#34;惰性过期删除&#34;&gt;惰性过期删除&lt;/h2&gt;
-
-&lt;p&gt;Redis在执行任何读写命令时都会先找到这个key，惰性删除就作为一个切入点放在查找key之前，如果key过期了就删除这个key。&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/redis-expire-2.jpg&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;robj *lookupKeyRead(redisDb *db, robj *key) {
-    robj *val;
-
-    expireIfNeeded(db,key); // 切入点
-    val = lookupKey(db,key);
-    if (val == NULL)
-        server.stat_keyspace_misses++;
-    else
-        server.stat_keyspace_hits++;
-    return val;
-}
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h2 id=&#34;定期删除&#34;&gt;定期删除&lt;/h2&gt;
-
-&lt;p&gt;key的定期删除会在Redis的周期性执行任务（serverCron，默认每100ms执行一次）中进行，而且是发生Redis的master节点，因为slave节点会通过主节点的DEL命令同步过来达到删除key的目的。&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/redis-expire-3.jpg&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
-
-&lt;p&gt;依次遍历每个db（默认配置数是16），针对每个db，每次循环随机选择20个（ACTIVE_EXPIRE_CYCLE_LOOKUPS_PER_LOOP）key判断是否过期，如果一轮所选的key少于25%过期，则终止迭次，此外在迭代过程中如果超过了一定的时间限制则终止过期删除这一过程。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-c&#34;&gt;for (j = 0; j &amp;lt; dbs_per_call; j++) {
-    int expired;
-    redisDb *db = server.db+(current_db % server.dbnum);
-
-    /* Increment the DB now so we are sure if we run out of time
-     * in the current DB we&#39;ll restart from the next. This allows to
-     * distribute the time evenly across DBs. */
-    current_db++;
-
-    /* Continue to expire if at the end of the cycle more than 25%
-     * of the keys were expired. */
-    do {
-        unsigned long num, slots;
-        long long now, ttl_sum;
-        int ttl_samples;
-
-        /* 如果该db没有设置过期key，则继续看下个db*/
-        if ((num = dictSize(db-&amp;gt;expires)) == 0) {
-            db-&amp;gt;avg_ttl = 0;
-            break;
-        }
-        slots = dictSlots(db-&amp;gt;expires);
-        now = mstime();
-
-        /* When there are less than 1% filled slots getting random
-         * keys is expensive, so stop here waiting for better times...
-         * The dictionary will be resized asap. */
-        if (num &amp;amp;&amp;amp; slots &amp;gt; DICT_HT_INITIAL_SIZE &amp;amp;&amp;amp;
-            (num*100/slots &amp;lt; 1)) break;
-
-        /* The main collection cycle. Sample random keys among keys
-         * with an expire set, checking for expired ones. */
-        expired = 0;
-        ttl_sum = 0;
-        ttl_samples = 0;
-
-        if (num &amp;gt; ACTIVE_EXPIRE_CYCLE_LOOKUPS_PER_LOOP)
-            num = ACTIVE_EXPIRE_CYCLE_LOOKUPS_PER_LOOP;// 20
-
-        while (num--) {
-            dictEntry *de;
-            long long ttl;
-
-            if ((de = dictGetRandomKey(db-&amp;gt;expires)) == NULL) break;
-            ttl = dictGetSignedIntegerVal(de)-now;
-            if (activeExpireCycleTryExpire(db,de,now)) expired++;
-            if (ttl &amp;gt; 0) {
-                /* We want the average TTL of keys yet not expired. */
-                ttl_sum += ttl;
-                ttl_samples++;
-            }
-        }
-
-        /* Update the average TTL stats for this database. */
-        if (ttl_samples) {
-            long long avg_ttl = ttl_sum/ttl_samples;
-
-            /* Do a simple running average with a few samples.
-             * We just use the current estimate with a weight of 2%
-             * and the previous estimate with a weight of 98%. */
-            if (db-&amp;gt;avg_ttl == 0) db-&amp;gt;avg_ttl = avg_ttl;
-            db-&amp;gt;avg_ttl = (db-&amp;gt;avg_ttl/50)*49 + (avg_ttl/50);
-        }
-
-        /* We can&#39;t block forever here even if there are many keys to
-         * expire. So after a given amount of milliseconds return to the
-         * caller waiting for the other active expire cycle. */
-        iteration++;
-        if ((iteration &amp;amp; 0xf) == 0) { /* 每迭代16次检查一次 */
-            long long elapsed = ustime()-start;
-
-            latencyAddSampleIfNeeded(&amp;quot;expire-cycle&amp;quot;,elapsed/1000);
-            if (elapsed &amp;gt; timelimit) timelimit_exit = 1;
-        }
-        // 超过时间限制则退出
-        if (timelimit_exit) return;
-        /* 在当前db中，如果少于25%的key过期，则停止继续删除过期key */
-    } while (expired &amp;gt; ACTIVE_EXPIRE_CYCLE_LOOKUPS_PER_LOOP/4);
-}
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h2 id=&#34;总结&#34;&gt;总结&lt;/h2&gt;
+&lt;h2 id=&#34;测试环境&#34;&gt;测试环境&lt;/h2&gt;
 
 &lt;ul&gt;
-&lt;li&gt;惰性删除：读写之前判断key是否过期&lt;/li&gt;
-&lt;li&gt;定期删除：定期抽样key，判断是否过期&lt;/li&gt;
+&lt;li&gt;消息大小 20B&lt;/li&gt;
+&lt;li&gt;Windows 10, 4内核，8逻辑CPU&lt;/li&gt;
+&lt;li&gt;JDK 8&lt;/li&gt;
 &lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Linux常用命令总结</title>
-      <link>http://vonzhou.com/2018/linux-commands/</link>
-      <pubDate>Fri, 31 Aug 2018 00:00:00 +0000</pubDate>
-      
-      <guid>http://vonzhou.com/2018/linux-commands/</guid>
-      <description>
 
-&lt;p&gt;列举平时常用但不易记住的Linux命令，工欲善其事，必先利其器，掌握了这些常用的工具命令就会在工作学习中得心应手。每掌握一个新的命令或者选项，可能你就会发现新的天地，加之不同命令的组合（管道）和重定向，必会受益匪浅。&lt;/p&gt;
+&lt;h2 id=&#34;测试用例&#34;&gt;测试用例&lt;/h2&gt;
 
-&lt;h2 id=&#34;进程-process&#34;&gt;进程 Process&lt;/h2&gt;
+&lt;p&gt;本文采用一个生产者来生产特定数量的消息，然后使用缓冲队列，由特定数量的消费者来共同消费处理这批消息。&lt;/p&gt;
 
-&lt;h3 id=&#34;top&#34;&gt;top&lt;/h3&gt;
-
-&lt;p&gt;top 命令用于动态查看系统的进程信息。top的输出分为上部的综述信息及下部的任务列表信息。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;➜   top    
-top - 16:42:10 up 28 days,  1:33,  5 users,  load average: 0.54, 0.83, 0.95
-Tasks: 383 total,   1 running, 331 sleeping,   0 stopped,   0 zombie
-%Cpu(s):  3.1 us,  1.3 sy,  0.0 ni, 91.9 id,  3.6 wa,  0.0 hi,  0.2 si,  0.0 st
-KiB Mem : 16207712 total,  6220896 free,  8091128 used,  1895688 buff/cache
-KiB Swap: 16557052 total, 11717176 free,  4839876 used.  7169268 avail Mem 
-
-  PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND                                                                            
- 9807 storm     20   0 1240256 132344  39220 S   1.3  0.8   2:16.22 sublime_text                                                                       
-16901 storm     20   0 3563824  80832  11560 S   1.0  0.5 147:04.65 mysql-workbench                                                                    
-29806 storm     20   0 1493396 166300  43012 S   1.0  1.0 227:12.95 chromium-browse                                                                    
-11794 storm     20   0   42080   3820   2968 R   0.7  0.0   0:02.40 top                                                                                
-    8 root      20   0       0      0      0 I   0.3  0.0  59:51.17 rcu_sched                                                                          
-  223 root      20   0       0      0      0 S   0.3  0.0  10:42.25 jbd2/sda2-8                                                                        
-  249 root       0 -20       0      0      0 I   0.3  0.0   0:01.81 kworker/3:1H                                                                       
- 5355 storm     25   5 7293144 1.083g   6828 S   0.3  7.0   2:00.27 java                                                                               
- 9243 mysql     20   0 2289984  68336   3656 S   0.3  0.4 435:16.33 mysqld                                                                             
-10821 storm     20   0 3565716 135776   6840 S   0.3  0.8   6:37.23 java                                                                               
-19014 storm     20   0 3115864 150332  48100 S   0.3  0.9 193:51.63 chromium-browse
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;综述信息包括：
-（1）系统运行的时间，和uptime命令输出一样，比如这里的 16:42:10 up 28 days,  1:33 表示当前时间是 16:42:10 ，运行了28天1小时33分。&lt;/p&gt;
-
-&lt;p&gt;（2）会话个数，比如这里的  5 users，表示当前有5个会话连接，可以用who命令看到具体情况。&lt;/p&gt;
-
-&lt;p&gt;（3）系统负载，系统在过去1分钟，5分钟，15分钟的平均负载，==如果平均负载值超过了CPU的个数（可以使用nproc或者 cat /proc/cpuinfo 命令看）就说明负载很重了，要重视。==&lt;/p&gt;
-
-&lt;p&gt;（4）处于运行、睡眠、停止、僵尸状态的进程数量统计。&lt;/p&gt;
-
-&lt;p&gt;（5）CPU使用情况，us，sy分别表示CPU在用户空间和内核空间花费的时间，用于执行修改了nice值得进程花费的时间会显示在ni这里，id表示CPU空闲时间，wa表示等待IO完成消耗的时间，hi，si分别表示CPU用于处理硬中断，软终端所用时间，st表示在虚拟化环境中，一个虚拟CPU等待真实CPU的时间（因为Hypervisor在服务另一个虚拟处理器），CPU资源被Hypervisor偷去了（Steal Time）。&lt;/p&gt;
-
-&lt;p&gt;（6）内存及交换分区使用情况，总共有多少，使用了多少，空闲多少。&lt;/p&gt;
-
-&lt;p&gt;接下来看任务列表信息栏，表头的各个字段含义为：&lt;/p&gt;
+&lt;p&gt;每条消息处理耗时20ms的情况 ， 4消费线程：&lt;/p&gt;
 
 &lt;table&gt;
 &lt;thead&gt;
 &lt;tr&gt;
-&lt;th&gt;PID&lt;/th&gt;
-&lt;th&gt;USER&lt;/th&gt;
-&lt;th&gt;PR&lt;/th&gt;
-&lt;th&gt;NI&lt;/th&gt;
-&lt;th&gt;VIRT&lt;/th&gt;
-&lt;th&gt;RES&lt;/th&gt;
-&lt;th&gt;SHR&lt;/th&gt;
-&lt;th&gt;%MEM&lt;/th&gt;
-&lt;th&gt;S&lt;/th&gt;
-&lt;th&gt;%CPU&lt;/th&gt;
-&lt;th&gt;TIME+&lt;/th&gt;
-&lt;th&gt;COMMAND&lt;/th&gt;
+&lt;th&gt;方式&lt;/th&gt;
+&lt;th&gt;1K&lt;/th&gt;
+&lt;th&gt;1W&lt;/th&gt;
+&lt;th&gt;10W&lt;/th&gt;
 &lt;/tr&gt;
 &lt;/thead&gt;
 
 &lt;tbody&gt;
 &lt;tr&gt;
-&lt;td&gt;进程ID&lt;/td&gt;
-&lt;td&gt;进程所属用户&lt;/td&gt;
-&lt;td&gt;调度优先级&lt;/td&gt;
-&lt;td&gt;nice值&lt;/td&gt;
-&lt;td&gt;虚拟内存大小&lt;/td&gt;
-&lt;td&gt;使用的物理内存&lt;/td&gt;
-&lt;td&gt;共享内存&lt;/td&gt;
-&lt;td&gt;使用内存的比例&lt;/td&gt;
-&lt;td&gt;进程状态&lt;/td&gt;
-&lt;td&gt;CPU份额&lt;/td&gt;
-&lt;td&gt;CPU时间（秒）&lt;/td&gt;
-&lt;td&gt;具体的命令&lt;/td&gt;
+&lt;td&gt;ABQ&lt;/td&gt;
+&lt;td&gt;5s&lt;/td&gt;
+&lt;td&gt;52s&lt;/td&gt;
+&lt;td&gt;525s&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;Disruptor&lt;/td&gt;
+&lt;td&gt;5s&lt;/td&gt;
+&lt;td&gt;52s&lt;/td&gt;
+&lt;td&gt;529s&lt;/td&gt;
 &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;/table&gt;
 
-&lt;p&gt;&lt;strong&gt;常用1&lt;/strong&gt;：根据资源使用情况排序进程列表&lt;/p&gt;
-
-&lt;p&gt;top 之后可以通过以下键实现对应的排序，默认是降序，可以使用R反转。也可以使用 top -o %CPU 指定排序的列。&lt;/p&gt;
-
-&lt;p&gt;M ： 根据内存使用量排序&lt;/p&gt;
-
-&lt;p&gt;P ： 根据CPU使用排序&lt;/p&gt;
-
-&lt;p&gt;N ： 根据进程ID号排序&lt;/p&gt;
-
-&lt;p&gt;T ： 根据运行时长排序&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;常用2&lt;/strong&gt;：列出线程&lt;/p&gt;
-
-&lt;p&gt;通过H键来控制是否列出线程，列出线程后综述信息中也会多出线程的统计信息。也可以运行top命令时指定选项 top -H 。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;常用3&lt;/strong&gt;：列出命令的完整路径&lt;/p&gt;
-
-&lt;p&gt;通过c键来控制是否列出命令对应的完整路径。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;常用4&lt;/strong&gt;：列出特定用户的进程&lt;/p&gt;
-
-&lt;p&gt;通过u键，可以输入用户名，列出从属的进程信息。也可以运行top命令时指定选项，如 top -u root 。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;常用5&lt;/strong&gt;：根据各种条件过滤进程&lt;/p&gt;
-
-&lt;p&gt;通过O键，可以各种条件来一层层过滤得到自己关注的进程，比如 COMMAND=java 得到命令包含java的进程，%CPU&amp;gt;3.0 得到CPU占用大于3的进程。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;常用6&lt;/strong&gt;：查看一个进程对应的线程 top -H -p PID&lt;/p&gt;
-
-&lt;h3 id=&#34;ps&#34;&gt;ps&lt;/h3&gt;
-
-&lt;p&gt;ps命令用于输出当前系统的进程信息，和top的持续输出不同，ps输出的是一个快照。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;常用&lt;/strong&gt;：列出所有进程&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;➜  ~ps -ef 
-UID        PID  PPID  C STIME TTY          TIME CMD
-root         1     0  0 15:22 ?        00:00:01 /sbin/init splash
-root         2     0  0 15:22 ?        00:00:00 [kthreadd]
-root         4     2  0 15:22 ?        00:00:00 [kworker/0:0H]
-root         6     2  0 15:22 ?        00:00:00 [mm_percpu_wq]
-storm     5892 21695  0 17:28 pts/36   00:00:00 less 3D_spatial_network.txt
-......
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;-e：所有进程，等同于 -A。
--f：可以看到更多的信息，比如完整的程序名。&lt;/p&gt;
-
-&lt;h3 id=&#34;lsof&#34;&gt;lsof&lt;/h3&gt;
-
-&lt;p&gt;lsof（list open files）可以列出系统打开的文件描述符（包括普通文件，网络端口号，管道等），也十分强大。在下面的匹配模式中，^开头都表示非，相反的模式。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;常用1&lt;/strong&gt;：列出以特定字符串开头的进程打开的文件情况&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;➜   sudo lsof -c mysql
-[sudo] password for storm: 
-COMMAND     PID  USER   FD      TYPE             DEVICE SIZE/OFF     NODE NAME
-mysqld     9243 mysql  cwd       DIR                8,2     4096 38283055 /var/lib/mysql
-mysqld     9243 mysql  rtd       DIR                8,2     4096        2 /
-mysqld     9243 mysql  txt       REG                8,2 24895464 46140873 /usr/sbin/mysqld
-mysqld     9243 mysql  DEL       REG               0,18             49257 /[aio]
-mysqld     9243 mysql  DEL       REG               0,18             49256 /[aio]
-mysqld     9243 mysql  DEL       REG               0,18             49255 /[aio]
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;&lt;strong&gt;常用2&lt;/strong&gt;：特定进程打开的文件&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;➜  ~ lsof -p 9305
-COMMAND  PID  USER   FD      TYPE             DEVICE SIZE/OFF     NODE NAME
-java    9305 storm  cwd       DIR                8,2     4096 56235542 /home/storm
-java    9305 storm  rtd       DIR                8,2     4096        2 /
-java    9305 storm  txt       REG                8,2     7414 13239133 /home/storm/dev/idea-IU-182.3684.101/jre64/bin/java
-java    9305 storm  mem       REG                8,2    31312 46146073 /usr/lib/x86_64-linux-gnu/libnotify.so.4.0.0
-java    9305 storm  mem       REG                8,2 65012836 46268507 /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/rt.jar
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;&lt;strong&gt;常用3&lt;/strong&gt;：列出网络连接信息，top -i [i]，i用于给定要匹配的地址模式&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;➜  ~ lsof -i
-COMMAND     PID  USER   FD   TYPE  DEVICE SIZE/OFF NODE NAME
-java       6983 storm   32u  IPv6  362378      0t0  UDP *:38183 
-java       6983 storm   33u  IPv6  363325      0t0  TCP *:http-alt (LISTEN)
-java       9305 storm   21u  IPv4 3089042      0t0  TCP localhost:37877-&amp;gt;localhost:35762 (ESTABLISHED)
-.....
-➜  ~ lsof -i tcp
-COMMAND     PID  USER   FD   TYPE  DEVICE SIZE/OFF NODE NAME
-java       6983 storm   33u  IPv6  363325      0t0  TCP *:http-alt (LISTEN)
-java       9305 storm   21u  IPv4 3089045      0t0  TCP localhost:37877-&amp;gt;localhost:35766 (ESTABLISHED)
-....
-➜  ~ lsof -i udp 
-COMMAND     PID  USER   FD   TYPE  DEVICE SIZE/OFF NODE NAME
-java       6983 storm   32u  IPv6  362378      0t0  UDP *:38183 
-chromium- 19014 storm  118u  IPv4 2483939      0t0  UDP *:mdns 
-➜  ~ lsof -i tcp:37877
-COMMAND  PID  USER   FD   TYPE  DEVICE SIZE/OFF NODE NAME
-java    9305 storm   21u  IPv4 3090619      0t0  TCP localhost:37877-&amp;gt;localhost:35772 (ESTABLISHED)
-java    9305 storm  261u  IPv4 2323357      0t0  TCP *:37877 (LISTEN)
-java    9451 storm   77u  IPv6 3089068      0t0  TCP localhost:35772-&amp;gt;localhost:37877 (ESTABLISHED)
-➜  ~ lsof -i udp:38183
-COMMAND  PID  USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
-java    6983 storm   32u  IPv6 362378      0t0  UDP *:38183
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;&lt;strong&gt;常用4&lt;/strong&gt;：恢复误删除的文件&lt;/p&gt;
-
-&lt;p&gt;一个文件如果正在被进程使用（没有close），误删后，可以被恢复。一种常见的情况是一个正在被使用的日志文件，被删除了，但是句柄没有被释放，占用的磁盘空间并没有得到释放，此时可以先恢复，然后 cat &amp;ldquo; &amp;gt; /path/to/log，或者直接kill掉进程。&lt;/p&gt;
-
-&lt;p&gt;PID=27878的进程此时使用了less打开了文件3D_spatial_network.txt。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;➜  ~ lsof -c less                                         
-COMMAND   PID  USER   FD   TYPE DEVICE SIZE/OFF     NODE NAME
-less    27878 storm  cwd    DIR    8,2     4096 56235542 /home/storm
-less    27878 storm  rtd    DIR    8,2     4096        2 /
-less    27878 storm  txt    REG    8,2   170728 45875271 /bin/less
-less    27878 storm  mem    REG    8,2  2981280 46137392 /usr/lib/locale/locale-archive
-less    27878 storm  mem    REG    8,2  1868984 44307626 /lib/x86_64-linux-gnu/libc-2.23.so
-less    27878 storm  mem    REG    8,2   167240 44307045 /lib/x86_64-linux-gnu/libtinfo.so.5.9
-less    27878 storm  mem    REG    8,2   162632 44307624 /lib/x86_64-linux-gnu/ld-2.23.so
-less    27878 storm    0u   CHR 136,20      0t0       23 /dev/pts/20
-less    27878 storm    1u   CHR 136,20      0t0       23 /dev/pts/20
-less    27878 storm    2u   CHR 136,20      0t0       23 /dev/pts/20
-less    27878 storm    3r   CHR    5,0      0t0       13 /dev/tty
-less    27878 storm    4r   REG    8,2 20673913 56235819 /home/storm/3D_spatial_network.txt
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;现在删除3D_spatial_network.txt文件后，可以在lsof中看到。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;➜  ~ rm 3D_spatial_network.txt 
-➜  ~ lsof -c less             
-COMMAND   PID  USER   FD   TYPE DEVICE SIZE/OFF     NODE NAME
-less    27878 storm  cwd    DIR    8,2     4096 56235542 /home/storm
-less    27878 storm  rtd    DIR    8,2     4096        2 /
-less    27878 storm  txt    REG    8,2   170728 45875271 /bin/less
-less    27878 storm  mem    REG    8,2  2981280 46137392 /usr/lib/locale/locale-archive
-less    27878 storm  mem    REG    8,2  1868984 44307626 /lib/x86_64-linux-gnu/libc-2.23.so
-less    27878 storm  mem    REG    8,2   167240 44307045 /lib/x86_64-linux-gnu/libtinfo.so.5.9
-less    27878 storm  mem    REG    8,2   162632 44307624 /lib/x86_64-linux-gnu/ld-2.23.so
-less    27878 storm    0u   CHR 136,20      0t0       23 /dev/pts/20
-less    27878 storm    1u   CHR 136,20      0t0       23 /dev/pts/20
-less    27878 storm    2u   CHR 136,20      0t0       23 /dev/pts/20
-less    27878 storm    3r   CHR    5,0      0t0       13 /dev/tty
-less    27878 storm    4r   REG    8,2 20673913 56235819 /home/storm/3D_spatial_network.txt (deleted)  // 这里
-➜  ~ ls -alh 3D_spatial_network.txt
-ls: cannot access &#39;3D_spatial_network.txt&#39;: No such file or directory
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;可以根据PID和FD（文件描述符）来恢复文件。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;➜  ~ cp /proc/27878/fd/4 3D_spatial_network.txt
-➜  ~ ls -alh 3D_spatial_network.txt
--rw-rw-r-- 1 storm storm 20M Aug 29 15:54 3D_spatial_network.txt
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h2 id=&#34;网络-network&#34;&gt;网络 Network&lt;/h2&gt;
-
-&lt;h3 id=&#34;netstat&#34;&gt;netstat&lt;/h3&gt;
-
-&lt;p&gt;netstat是查看网络端口情况的必备命令。&lt;/p&gt;
-
-&lt;p&gt;常用：列出所有的TCP，UDP端口占用情况&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;➜  ~ netstat -atunp 
-Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
-tcp        0      0 127.0.0.1:3306          0.0.0.0:*               LISTEN      -               
-....
-udp        0      0 0.0.0.0:68              0.0.0.0:*                           -               
-udp6       0      0 :::33527                :::*                                1366/java                     
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;-a（&amp;ndash;all）：显示包括LISTEN状态的连接，默认没有。&lt;/p&gt;
-
-&lt;p&gt;-t（&amp;ndash;tcp）：TCP连接。&lt;/p&gt;
-
-&lt;p&gt;-u（&amp;ndash;udp）：UDP连接。&lt;/p&gt;
-
-&lt;p&gt;-n（&amp;ndash;numeric）：显示数字形式的地址，比如 localhost:mysql 会展示为 127.0.0.1:3306。&lt;/p&gt;
-
-&lt;p&gt;-l（&amp;ndash;listening）：仅显示处于监听状态的套接字。&lt;/p&gt;
-
-&lt;p&gt;-p（&amp;ndash;program）： 显示PID和程序名。&lt;/p&gt;
-
-&lt;h3 id=&#34;tcpdump-https-github-com-vonzhou-blog-tree-master-contents-linux-tcpdump&#34;&gt;&lt;a href=&#34;https://github.com/vonzhou/Blog/tree/master/Contents/Linux/tcpdump&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;tcpdump&lt;/a&gt;&lt;/h3&gt;
-
-&lt;h2 id=&#34;文件操作-file-operation&#34;&gt;文件操作 File Operation&lt;/h2&gt;
-
-&lt;h3 id=&#34;grep&#34;&gt;grep&lt;/h3&gt;
-
-&lt;p&gt;grep（Global Regular Expression Print的缩写）命令是一个强大的文本搜索工具，它使用正则表达式搜索文本，并把匹配的行输出。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;常用1&lt;/strong&gt;：在文件中查找特定的字符串&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;➜  ~ grep  &#39;linux&#39; 1.log  
-hello linux
-➜  ~ grep -n -e &#39;linux&#39; 1.log 2.log
-1.log:1:hello linux
-2.log:2:linux is a great os
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;-e（&amp;ndash;regexp=PATTERN）：指定要匹配的模式，如果要搜索多种模式，则形如 -e &amp;lsquo;pattern1&amp;rsquo; -e &amp;lsquo;pattern&amp;rsquo;，否则会把后面的当做文件名。&lt;/p&gt;
-
-&lt;p&gt;-n：显示匹配的行所处的行号。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;常用2&lt;/strong&gt;：利用管道，在其他命令的输出中查找&lt;/p&gt;
-
-&lt;p&gt;最常见的是和cat，tail配合使用。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;➜  ~ cat 3D_spatial_network.txt| grep 94532185752113
-42991635,8.5053563,57.045265,7.94532185752113
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;&lt;strong&gt;常用3&lt;/strong&gt;：输出匹配行的前面几行（-B），后面几行（-A）上下文&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;➜  ~ cat 3D_spatial_network.txt| grep 94532185752113 -A 3 -B 3
-42991632,8.560503,57.0228637,23.5659512030544
-42991632,8.5595327,57.0230085,23.0573080298429
-42991634,8.5052981,57.0427326,9.32131212369931
-42991635,8.5053563,57.045265,7.94532185752113
-42991635,8.5038165,57.0452699,6.83530187642383
-42991636,8.5038165,57.0452699,7.03679520220392
-42991637,8.5058627,57.0443316,8.86855661728298
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;&lt;strong&gt;常用4&lt;/strong&gt;：在目录中查找特定的文本&lt;/p&gt;
-
-&lt;p&gt;-r（&amp;ndash;recursive）：递归处理目录。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;➜  ~ grep -nr &#39;simple&#39; logs 
-logs/1.log:4:simple is beauty
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h3 id=&#34;df&#34;&gt;df&lt;/h3&gt;
-
-&lt;p&gt;df命令用于查看文件系统中各个挂载点的磁盘空间使用情况。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;常用1&lt;/strong&gt;：以易读方式输出&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;➜  ~ df -h      
-Filesystem      Size  Used Avail Use% Mounted on
-udev            7.8G     0  7.8G   0% /dev
-tmpfs           1.6G   89M  1.5G   6% /run
-/dev/sda2       901G  427G  428G  50% /
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;&lt;strong&gt;常用2&lt;/strong&gt;：列出inode使用情况，有时候会出现磁盘空间未满，inode不足，可能是因为小文件太多，取决于虚拟主机的inode的配额。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;➜  ~ df -ih 
-Filesystem     Inodes IUsed IFree IUse% Mounted on
-udev             2.0M   509  2.0M    1% /dev
-tmpfs            2.0M   808  2.0M    1% /run
-/dev/sda2         58M  605K   57M    2% /
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h3 id=&#34;du&#34;&gt;du&lt;/h3&gt;
-
-&lt;p&gt;du命令用于显示某目录下各个文件或文件夹占用的磁盘空间大小。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;常用&lt;/strong&gt;：du -ah -d 1&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;➜  test du -ah -d 1
-4.0K    ./editDistance.go
-20M ./3D_spatial_network.txt
-4.0K    ./hamming.go
-4.0K    ./simHashTest.go
-116M    ./src
-136M    .
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;-a（&amp;ndash;all） : 显示所有文件情况，而不仅仅是文件夹。&lt;/p&gt;
-
-&lt;p&gt;-h（&amp;ndash;human-readable）：占用的磁盘空间大小会转化为以KB，MB为单位，而不是字节。&lt;/p&gt;
-
-&lt;p&gt;-d（&amp;ndash;max-depth=N）：对于目录，可以指定递归的深度。&lt;/p&gt;
-
-&lt;h3 id=&#34;find&#34;&gt;find&lt;/h3&gt;
-
-&lt;p&gt;find命令是查找文件的利器。&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;常用&lt;/strong&gt;：删除n天之前的文件&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;find /path/to/directory/ -mindepth 1 -mtime +5 -delete
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;也可以使用：&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;find /path/to/dir -mtime +5 | xargs rm -rf
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;find 常用的选项有：&lt;/p&gt;
-
-&lt;p&gt;-name：指定要寻找的文件名符合的模式。&lt;/p&gt;
-
-&lt;p&gt;-i: 忽略大小写。&lt;/p&gt;
-
-&lt;p&gt;-maxdepth：要递归的最大深度， -mindepth指定最小深度。&lt;/p&gt;
-
-&lt;p&gt;-mtime：指定修改时间在n天之前（+n），或在n天之内（-n）。&lt;/p&gt;
-
-&lt;h3 id=&#34;ls&#34;&gt;ls&lt;/h3&gt;
-
-&lt;p&gt;&lt;strong&gt;常用&lt;/strong&gt;：统计一个目录下文件个数&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;ls -1 folder | wc -l  
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;-1：注意是数字1，表示一个文件占一行&lt;/p&gt;
-
-&lt;h3 id=&#34;ln&#34;&gt;ln&lt;/h3&gt;
-
-&lt;p&gt;&lt;strong&gt;常用&lt;/strong&gt;：创建符号链接（软链接）&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;➜  ~ cat &#39;hello&#39; &amp;gt; hello
-➜  ~ ln -s hello hello2
-➜  ~ ls -alh hello2
-lrwxrwxrwx 1 storm storm 5 Aug 31 15:20 hello2 -&amp;gt; hello 
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;-s（&amp;ndash;symbolic）：软链接 hello2 会指向原文件 hello&lt;/p&gt;
-
-&lt;h3 id=&#34;scp&#34;&gt;scp&lt;/h3&gt;
-
-&lt;p&gt;&lt;strong&gt;常用&lt;/strong&gt;：拷贝文件到服务器，或者相反&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;C:\Users\vonzh&amp;gt;scp -P 22 D:\\log.txt storm@10.240.209.160:/tmp
-storm@10.240.209.160&#39;s password:
-log.txt                                                                               100% 2316KB   2.3MB/s   00:00
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;-P：指定目标主机SSH端口号。另一种实现文件拷贝的方式是&lt;strong&gt;采用Python提供的SimpleHTTPServer，然后在对应机器上使用wget下载，如果是用VPN连的服务器话，要使用隧道的IP&lt;/strong&gt;。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;python -m SimpleHTTPServer 9999
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h3 id=&#34;unzip&#34;&gt;unzip&lt;/h3&gt;
-
-&lt;p&gt;&lt;strong&gt;常用1&lt;/strong&gt;：解压zip到指定目录&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;➜  ~ zip test.zip 3D_spatial_network.txt hello
-  adding: 3D_spatial_network.txt (deflated 63%)
-  adding: hello (stored 0%)
-➜  ~ unzip -d test2 test.zip 
-Archive:  test.zip
-  inflating: test2/3D_spatial_network.txt  
- extracting: test2/hello             
-➜  ~ ls -alh test2
-total 20M
-drwxrwxr-x  2 storm storm 4.0K Aug 31 15:37 .
-drwxr-xr-x 43 storm storm 4.0K Aug 31 15:37 ..
--rw-rw-r--  1 storm storm  20M Aug 29 15:54 3D_spatial_network.txt
--rw-rw-r--  1 storm storm    0 Aug 31 15:19 hello
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;&lt;strong&gt;常用2&lt;/strong&gt;：列出zip文件中的文件名&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;unzip -Z -1 archive.zip
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;-Z：如果zip命令的第一个参数是-Z，则会相当于调用zipinfo命令。&lt;/p&gt;
-
-&lt;p&gt;-1：数字1，zipinfo命令的选项，表示只显示文件名，每个一行，类似ls中的-1。&lt;/p&gt;
-
-&lt;h3 id=&#34;zip&#34;&gt;zip&lt;/h3&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;zip -r test.zip /path/to/test
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h3 id=&#34;mkdir&#34;&gt;mkdir&lt;/h3&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;mkdir -p /path/to/dir
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;-p: 父目录不存在则会创建&lt;/p&gt;
-
-&lt;h3 id=&#34;chattr&#34;&gt;chattr&lt;/h3&gt;
-
-&lt;p&gt;设置一个目录用户不能删除，&lt;code&gt;-a&lt;/code&gt; 可以取消这个权限保护。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;sudo chattr +a /home/user1/protected
-&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;每条消息处理耗时20ms的情况 ， 8消费线程：&lt;/p&gt;
+
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;方式&lt;/th&gt;
+&lt;th&gt;1K&lt;/th&gt;
+&lt;th&gt;1W&lt;/th&gt;
+&lt;th&gt;10W&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;ABQ&lt;/td&gt;
+&lt;td&gt;2s&lt;/td&gt;
+&lt;td&gt;26s&lt;/td&gt;
+&lt;td&gt;263s&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;Disruptor&lt;/td&gt;
+&lt;td&gt;2s&lt;/td&gt;
+&lt;td&gt;26s&lt;/td&gt;
+&lt;td&gt;263s&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;从中可以看到，平均下来5ms一条消息（每条消息耗时20ms，4个线程）。如果一条消息处理的时间比较长，则使用普通ABQ，Disruptor开销差别不大，因为大头时间在消息的处理上，锁争用的开销不明显。&lt;/p&gt;
+
+&lt;p&gt;每条消息处理耗时20ms的情况 ， 4消费线程：&lt;/p&gt;
+
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;方式&lt;/th&gt;
+&lt;th&gt;1K&lt;/th&gt;
+&lt;th&gt;1W&lt;/th&gt;
+&lt;th&gt;10W&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;ABQ&lt;/td&gt;
+&lt;td&gt;756ms&lt;/td&gt;
+&lt;td&gt;7.332s&lt;/td&gt;
+&lt;td&gt;72.73s&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;Disruptor&lt;/td&gt;
+&lt;td&gt;826ms&lt;/td&gt;
+&lt;td&gt;7.279s&lt;/td&gt;
+&lt;td&gt;71.047s&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;每条消息处理耗时2ms的情况 ， 1消费线程：&lt;/p&gt;
+
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;方式&lt;/th&gt;
+&lt;th&gt;1K&lt;/th&gt;
+&lt;th&gt;1W&lt;/th&gt;
+&lt;th&gt;10W&lt;/th&gt;
+&lt;th&gt;100W&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;ABQ&lt;/td&gt;
+&lt;td&gt;3.156s&lt;/td&gt;
+&lt;td&gt;28.803s&lt;/td&gt;
+&lt;td&gt;284.221s&lt;/td&gt;
+&lt;td&gt;2846 s&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;Disruptor&lt;/td&gt;
+&lt;td&gt;3.063s&lt;/td&gt;
+&lt;td&gt;28.436s&lt;/td&gt;
+&lt;td&gt;284.158s&lt;/td&gt;
+&lt;td&gt;2812 s&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;当消息处理很快时（&amp;lt; 1ms）。&lt;/p&gt;
+
+&lt;p&gt;1消费线程：&lt;/p&gt;
+
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;方式&lt;/th&gt;
+&lt;th&gt;1K&lt;/th&gt;
+&lt;th&gt;1W&lt;/th&gt;
+&lt;th&gt;10W&lt;/th&gt;
+&lt;th&gt;100W&lt;/th&gt;
+&lt;th&gt;1000W&lt;/th&gt;
+&lt;th&gt;1W * 1W&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;ABQ&lt;/td&gt;
+&lt;td&gt;37ms&lt;/td&gt;
+&lt;td&gt;151ms&lt;/td&gt;
+&lt;td&gt;1059ms&lt;/td&gt;
+&lt;td&gt;8.59s&lt;/td&gt;
+&lt;td&gt;87 s&lt;/td&gt;
+&lt;td&gt;813 s&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;Disruptor&lt;/td&gt;
+&lt;td&gt;94ms&lt;/td&gt;
+&lt;td&gt;215ms&lt;/td&gt;
+&lt;td&gt;7.6s&lt;/td&gt;
+&lt;td&gt;7.6s&lt;/td&gt;
+&lt;td&gt;69.87 s&lt;/td&gt;
+&lt;td&gt;684 s&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;4消费线程：&lt;/p&gt;
+
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;方式&lt;/th&gt;
+&lt;th&gt;1K&lt;/th&gt;
+&lt;th&gt;1W&lt;/th&gt;
+&lt;th&gt;10W&lt;/th&gt;
+&lt;th&gt;100W&lt;/th&gt;
+&lt;th&gt;1000W&lt;/th&gt;
+&lt;th&gt;1W * 1W&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;ABQ&lt;/td&gt;
+&lt;td&gt;38ms&lt;/td&gt;
+&lt;td&gt;181ms&lt;/td&gt;
+&lt;td&gt;1243ms&lt;/td&gt;
+&lt;td&gt;9.74s&lt;/td&gt;
+&lt;td&gt;100s&lt;/td&gt;
+&lt;td&gt;1024 s&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;Disruptor&lt;/td&gt;
+&lt;td&gt;63ms&lt;/td&gt;
+&lt;td&gt;162ms&lt;/td&gt;
+&lt;td&gt;1167ms&lt;/td&gt;
+&lt;td&gt;9.88s&lt;/td&gt;
+&lt;td&gt;97.8s&lt;/td&gt;
+&lt;td&gt;1002 s&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h2 id=&#34;总结&#34;&gt;总结&lt;/h2&gt;
+
+&lt;p&gt;从上面的测试情况下，处理在消息处理很快，且使用单消费者的时候Disruptor表现较好，其他情况并没有任何优势。&lt;/p&gt;
+
+&lt;p&gt;在Disruptor官方文档中给出的性能测试结果并没有涵盖本文中的场景，官方文档中的1P-3C多播方式要用多个ArrayBlockingQueue来实现Disruptor中的Multicast方式（内部是一个RingBuffer，但是多个Sequnce）。&lt;/p&gt;
+
+&lt;p&gt;所以在选用Disruptor的时候一定要具体的测试，搞清自己的场景，像本文中的一个生产者，多个消费者共同处理消息的场景使用普通的线程池+ABQ就足够了，并不比Disruptor表现差。&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&#34;https://github.com/vonzhou/learning-java/tree/master/src/framework/disruptor/threadpoolvsdisruptor&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;本文代码&lt;/a&gt;。&lt;/p&gt;
 </description>
     </item>
     
     <item>
-      <title>2017阅读书单</title>
-      <link>http://vonzhou.com/2018/2017-read-book/</link>
-      <pubDate>Wed, 03 Jan 2018 00:00:00 +0000</pubDate>
+      <title>Java字节码工具AsmTools介绍</title>
+      <link>http://vonzhou.com/2018/asmtools-intro/</link>
+      <pubDate>Tue, 27 Nov 2018 00:00:00 +0000</pubDate>
       
-      <guid>http://vonzhou.com/2018/2017-read-book/</guid>
+      <guid>http://vonzhou.com/2018/asmtools-intro/</guid>
       <description>
 
-&lt;h2 id=&#34;技术&#34;&gt;技术&lt;/h2&gt;
-
-&lt;h3 id=&#34;hadoop实战&#34;&gt;《Hadoop实战》&lt;/h3&gt;
-
-&lt;p&gt;通过几个例子入门吧。&lt;/p&gt;
-
-&lt;h3 id=&#34;大型分布式网站架构设计与实践&#34;&gt;《大型分布式网站架构设计与实践》&lt;/h3&gt;
-
-&lt;p&gt;系统罗列了一些分布式架构中涉及的技术。&lt;/p&gt;
-
-&lt;h3 id=&#34;nginx-a-practical-guide-to-high-performance&#34;&gt;《nginx:a practical guide to high performance》&lt;/h3&gt;
-
-&lt;p&gt;有段时间系统性的学习了Nginx，这本小书很不错。&lt;/p&gt;
-
-&lt;h3 id=&#34;zookeeper-distributed-process-coordination&#34;&gt;《ZooKeeper：Distributed process coordination》&lt;/h3&gt;
-
-&lt;p&gt;读完就理解了Zookeeper的基本思想了，可以使用API进行编程了。还是要对一致性算法（如Raft）有理解。&lt;/p&gt;
-
-&lt;h3 id=&#34;redis开发与运维&#34;&gt;《redis开发与运维》&lt;/h3&gt;
-
-&lt;p&gt;各种命令的使用场景，最重要的可能就是里面对于可能遇到的问题如何分析处理。&lt;/p&gt;
-
-&lt;h3 id=&#34;mysql技术内幕-innodb存储引擎&#34;&gt;《MySQL技术内幕 : InnoDB存储引擎 》&lt;/h3&gt;
-
-&lt;p&gt;对底层原理讲述的比较清晰，读起来也是很顺畅，表是如何存储的？索引是如何设计的？&lt;/p&gt;
-
-&lt;h3 id=&#34;java-8实战&#34;&gt;《Java 8实战》&lt;/h3&gt;
-
-&lt;p&gt;对Java 8的特性讲述的很不错，函数式编程思想。&lt;/p&gt;
-
-&lt;h3 id=&#34;微服务设计&#34;&gt;《微服务设计》&lt;/h3&gt;
-
-&lt;p&gt;高屋建瓴讲述了微服务的方方面面，很多都需要去实践。架构的演进、部署、测试、安全&amp;hellip; 需要看看DDD相关的。&lt;/p&gt;
-
-&lt;h2 id=&#34;文学&#34;&gt;文学&lt;/h2&gt;
-
-&lt;h3 id=&#34;围城&#34;&gt;《围城》&lt;/h3&gt;
-
-&lt;p&gt;人物的描写很真实，能读到自己。&lt;/p&gt;
-
-&lt;h3 id=&#34;易中天中华史-大宋革新&#34;&gt;《易中天中华史·大宋革新》&lt;/h3&gt;
-
-&lt;p&gt;了解赵宋历史，武取的王朝却很重视文化，经济，正如清明上河图所反映的繁荣。&lt;/p&gt;
-
-&lt;h3 id=&#34;活着为了讲述&#34;&gt;《活着为了讲述》&lt;/h3&gt;
-
-&lt;p&gt;语言优美，值得反复阅读。&lt;/p&gt;
-
-&lt;p&gt;生活不是我们活过的日子，而是我们记住的日子，我们为了讲述而在记忆中重现的日子。&lt;/p&gt;
-
-&lt;p&gt;怀旧总会无视苦难，放大幸福，谁也免不了受它的侵袭。&lt;/p&gt;
-
-&lt;p&gt;唯一铁板钉钉的是，他们卷走了一切：钱、十二月的清风、切面包的餐刀、午后三点的惊雷、茉莉花香和爱。只留下灰头土脸的巴旦杏树、耀眼的街道、木头房子、生锈的锌皮屋顶，以及被回忆击垮、沉默寡言的人。&lt;/p&gt;
-
-&lt;p&gt;可是，那天晚上，我像战场上的战士一样视死如归地发下誓言：要么写作，要么死去。或者如里尔克所言：“如果您觉得不写也能活，那就别写。”&lt;/p&gt;
-
-&lt;p&gt;文学和人生只有形式上的差别，本质上是相通的。&lt;/p&gt;
-
-&lt;p&gt;他允许我把校图书馆的书带回家，其中的《金银岛》和《基督山伯爵》成了我坎坷岁月中的精神食粮。我如饥似渴地读，想知道下一行发生了什么，又不想知道，生怕精彩戛然而止。读完《一千零一夜》和这两本书之后，我永远地明白了一个道理：只有百读不厌的书才值得去读。&lt;/p&gt;
-
-&lt;p&gt;但当贫穷在巴兰基亚压得我们不能动弹时，我们不再去别人家吐苦水。妈妈一言蔽之:“穷人的眼睛里都写着‘穷’字。” 十分入骨的形容，一闭眼仿佛就看到了那双眼睛。也经历过穷与不幸，深深地体会那种不吐诉也由身体和精神中透出的凄凉与无望。&lt;/p&gt;
-
-&lt;p&gt;医生想知道她究竟看见了多少。外婆用全新的目光扫过房间，历数每件物品，精确得令人发指。医生傻了，只有我能听懂，外婆历数的物品不在病房，而在老宅卧室。有哪些东西，放在哪里，她都记得。外婆的视力此后再也没有恢复。&lt;/p&gt;
-
-&lt;p&gt;和同学们相处的四年培养了我对国家的全局观：我们彼此迥异，各有所长，合起来便是国家。&lt;/p&gt;
-
-&lt;p&gt;我在外公外婆家听过无数次，“千日战争”后，保守党和自由党的唯一区别是：自由党不想让人看见，因此去望五点钟的弥撒；保守党为了让人看见，因此去望八点钟的弥撒。&lt;/p&gt;
-
-&lt;p&gt;照此下去，我的幸福将不属于我自己，只能用来回报父母无尽的溺爱、莫名的担忧和乐观的期望。&lt;/p&gt;
-
-&lt;p&gt;如果无法让我热血沸腾，无法为我猛地推开神秘世界之窗，无法让我发现世界，无法在孤寂、爱恋、欢聚、失恋时陪伴我忧伤的心，诗歌于我，何用之有？&lt;/p&gt;
-
-&lt;p&gt;那是一种彰显历史公正的行为，纪念没有名字的英雄们，纪念的不是他们活过的人生，而是他们共同的命运。&lt;/p&gt;
-
-&lt;p&gt;我仍然是个没受过什么教育但手不释卷的读者，读的最多的是诗，包括烂诗。甚至情绪跌至低谷时，我都坚信烂诗早晚会带我邂逅好诗。&lt;/p&gt;
-
-&lt;p&gt;我是个典型的加勒比人，伤感、腼腆、重隐私，所有关乎隐私的问题我都会毫不客气地挡回去。我坚信自己的厄运与生俱来、无可补救，特别是财运和桃花运，命里没有便是无。但我不在乎，因为写好文章不需要好运气。我对荣誉、金钱、衰老一概不感兴趣，我笃信自己会年纪轻轻地死在街头。&lt;/p&gt;
-
-&lt;p&gt;生活中的糟糕事，写进书里也不会好。&lt;/p&gt;
-
-&lt;p&gt;他告诉我，那是他第一次吸毒，吸完他就对自己说：“妈的！这辈子除了这个，别的我都不想干。”在之后的四十年里，他前途渺茫，热情不减，自始至终履行了吸毒至死的诺言。&lt;/p&gt;
-
-&lt;p&gt;加勒比地区母亲们的想法根深蒂固：波哥大女人勾搭沿海男人，不为爱情，只为实现她们傍海而居的梦想。&lt;/p&gt;
-
-&lt;p&gt;直到坐在打字机前，喘过气来，我才发觉，长久以来，我既想见她，又怕与她终生厮守。&lt;/p&gt;
-
-&lt;h3 id=&#34;巨人的陨落&#34;&gt;《巨人的陨落》&lt;/h3&gt;
-
-&lt;p&gt;一战背景下，几个家族的故事，虚实结合。&lt;/p&gt;
-
-&lt;h3 id=&#34;人间失格&#34;&gt;《人间失格》&lt;/h3&gt;
-
-&lt;p&gt;失格，失去人格？&lt;/p&gt;
-
-&lt;h3 id=&#34;明朝那些事儿-7卷&#34;&gt;《明朝那些事儿 7卷》&lt;/h3&gt;
-
-&lt;p&gt;把历史写的很有趣，读完对明朝历史的脉络有大概了解。&lt;/p&gt;
-
-&lt;h3 id=&#34;万历十五年&#34;&gt;《万历十五年》&lt;/h3&gt;
-
-&lt;p&gt;对万历年间几个典型人物的描写，深刻揭露了当时社会的特点，是毫无保留的崇尚儒家道德，还是联系实际寻求阴阳的结合？&lt;/p&gt;
-
-&lt;h3 id=&#34;解忧杂货店&#34;&gt;《解忧杂货店》&lt;/h3&gt;
-
-&lt;p&gt;虽说有些推理的成分，但是读完印象还是停留在其中讲述的故事，浪矢爷爷并不是知道一切问题的答案，只是不断的挖掘我们真实的内心。&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>2016阅读书单</title>
-      <link>http://vonzhou.com/2016/2016-read-book/</link>
-      <pubDate>Sat, 10 Dec 2016 00:00:00 +0000</pubDate>
-      
-      <guid>http://vonzhou.com/2016/2016-read-book/</guid>
-      <description>&lt;p&gt;2016这一年接近尾声了，列出今年阅读的书。&lt;/p&gt;
+&lt;p&gt;AsmTools是一款字节码生成工具。 包括的组件：&lt;/p&gt;
 
 &lt;ul&gt;
-&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://book.douban.com/subject/1770782/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;卡勒德·胡赛尼《追风筝的人》&lt;/a&gt;    &amp;ndash;3.8
-&amp;gt; 政治，宗教，文化，种族让那个时代生活在阿富汗的人遭遇了毁灭，让我想起之前读《我们最幸福》里面朝鲜人民的种种。真正的救赎是去承担自己的责任，为你，千千万万遍。&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://book.douban.com/subject/26382433/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;伍绮诗 《无声告白》&lt;/a&gt;          &amp;ndash;3.17
-&amp;gt; 是的，深深的沉浸到了这本书，纠结的太多，言表的太少，期望有时候会成为枷锁，爱有时候会迷失方向，不要让孩子去实现我们的未曾实现。&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://book.douban.com/subject/25826578/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;池建强 《MacTalk 人生元编程》&lt;/a&gt;    -3.14
-&amp;gt; 喜欢MAC君的文采，很多话题都贴近，我在想何谓人生元编程？&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;&lt;a href=&#34;http://book.douban.com/subject/26576861/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《最好的告别》&lt;/a&gt;   &amp;ndash;1.19
-&amp;gt; 面对衰老，你的死亡观是怎样的？是谋求一息尚存还是生活的意义，当无法选择时我们需要和他进行端点讨论，不要太相信现代医学提供的默认选项，我们要不断的寻求适合自己的选项。&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;&lt;a href=&#34;http://book.douban.com/subject/10794070/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《心外传奇》&lt;/a&gt;        &amp;ndash;1.24
-&amp;gt; 讲述了心脏外科领域那些先锋追逐梦想的历程，光荣与牺牲，最终揭开了心脏的奥秘，不乏科学与道德的争论，虽然里面的专业术语理解不到位，但是也了解了心脏的结构，相关的术式演变。&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://book.douban.com/subject/1483894/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;罗贯中《三国演义》&lt;/a&gt;    &amp;ndash;3.4
-&amp;gt; 那几日读到上瘾，热血沸腾，看到孔明归天，就一下子没有了动力。&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;&lt;a href=&#34;http://book.douban.com/subject/5345682/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;许晓斌 《Maven实战》&lt;/a&gt;    -3.25
-&amp;gt; 有些东西更加清晰了，不止停留在用tool的阶段&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://book.douban.com/subject/26658379/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;KK《必然》&lt;/a&gt;    -3.27
-&amp;gt; cognfiying, flowing, screening, accessing, sharing, filtering, remixing, interacting, tracking 的时代已经开始，值得思考。&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://book.douban.com/subject/1858513/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;月亮与六便士&lt;/a&gt;   -4.20
-&amp;gt; 讲述了斯特里克兰德对艺术的不懈追求，是以保罗·高更为原型创作的小说。虽然情节不复杂，但是读起来优美，长于人物的描写。&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://book.douban.com/subject/24845582/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;卡勒德·胡赛尼 《群山回唱》&lt;/a&gt;  - 4.28
-&amp;gt; 时间从五十年代到2010年，有阿富汗的历史动乱，阿卜杜拉和帕丽从小时候的分散，到最后见面了，但是有些空缺却永远难以弥补。&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://github.com/vonzhou/SpringInAction3&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;Craig Walls《Spring实战 3rd》&lt;/a&gt;  -4.26
-&amp;gt; 在阅读本书的过程中本着小步前进的原则，争取把每个示例跑通，去年断断续续看过，但是这次才算完整消化，不过Spring之旅才刚刚开始。&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://github.com/vonzhou/SpringMVCTutorial&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;Paul Deck《Spring MVC 学习指南》&lt;/a&gt; -7.17
-&amp;gt; 比较简单清晰，看完之后至少知道该如何下手，但是深度方面需要自己的积淀。&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;Jeff Atwood《程序员的修炼-从优秀到卓越》 -5.9
-&amp;gt; 作者的博文集合，多开拓自己的视野，不止编码，设计，与人沟通，多读书。&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;《HTTP权威指南》 -5.18
-&amp;gt; 讲的非常好，理论上对HTTP有了全面的认识，接下来就需要在实践中巩固。&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://github.com/vonzhou/LearnYouHaskellForGreatGood&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;Learn You a Haskell For Great Good(Haskell趣学指南)&lt;/a&gt;  -6.3
-&amp;gt; 很久之前看英文版，读至后面三分之一处就放下了，而且理解不了。最近把中文版从头到尾阅读了一遍，部分仍然没有理解，接下来需要在实践中不断体会,对于有些概念要看Wikipedia。&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://book.douban.com/subject/4262627/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《重构》&lt;/a&gt; -6.20
-&amp;gt; 以前对这本书是抱着敬畏之情，阅读起来也是非常清爽，比《代码大全》的抽象度低一点。认知了常用的重构手法，当实际进行操作的时候就会联想到这些术语。&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://book.douban.com/subject/1085799/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;陈忠实《白鹿原》&lt;/a&gt; -6.24
-&amp;gt; 演义了白鹿两家几个人物在近代历史进程中各自不同的发展。能把握住什么事必须说，设么事不能说的人，才是真正的男人。&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;[《周鸿祎自述：我的互联网方法论》]()  -8.7
-&amp;gt; 反复强调的是注重用户体验，从小处突破，敢于失败，多次提到乔布斯和《硅谷热》。&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://book.douban.com/subject/5366248/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《你一定爱读的极简欧洲史》&lt;/a&gt; -11.12
-&amp;gt; 在手机上断断续续看完，欧洲历史的入门，有了一些大局的了解，但是细节需要再看其他的书。&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://github.com/vonzhou/JavaConcurrencyInPractice&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《Java并发编程实战》&lt;/a&gt; -11.20
-&amp;gt; 之前有看过，但是理解不够，这次系统的阅读一遍，同时结合代码，有了更深刻的把握，很多技巧值得自己实践，要不断结合自己的实际应用去精进，包括阅读源码。&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://book.douban.com/subject/1138768/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《深入Java虚拟机 第二版》&lt;/a&gt;
-&amp;gt; 算是第二遍阅读，需要自己的实践和体会，特别是GC算法，class文件结构，执行过程，类加载等。&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;《如何阅读一本书》-12.10
-&amp;gt; 读却不懂阅读的技巧，所以阅读带来的理解力的提高才极低。读了这本书，对阅读有了更规范的认识，该快读的书绝不沉溺，对该精读的确则该慢慢咀嚼，一本书读完后也该对全文的架构主旨有所体悟，有疑问的地方该得到解答，需要深入的主题则该针对性的进行主题阅读，向不同的作者寻求关于某个议题的解答，然后从中提炼出自己的理解，而不是娱乐性的获取资讯，阅读该是件严肃的事，不同的书有不同的阅读态度。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;jasm：由JASM格式得到class文件&lt;/li&gt;
+&lt;li&gt;jdis：把class文件转为JASM格式&lt;/li&gt;
+&lt;li&gt;jcoder：由JCOD格式得到class文件&lt;/li&gt;
+&lt;li&gt;jdec：把class文件转为JCOD格式&lt;/li&gt;
 &lt;/ul&gt;
+
+&lt;p&gt;两种汇编器/反汇编器（assembler/disassemblers）对应的格式有啥区别？&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;JASM specifically focuses on representing byte-code instructions in the VM format (while providing minimal description of the structure of  the rest of the class file).  Generally, JASM is more convenient for semantic changes, like change to instruction flow.&lt;/p&gt;
+
+&lt;p&gt;JCOD provides good support for describing the structure of a class file (as well as writing incorrect bytes outside of this structure), and provides no support for specifying byte-code instructions (simply raw bytes for instructions).   JCOD is typically used for VMs to test Well-formedness of class files (eg extra or missing bytes), boundary issues, constant-pool coherence, constant-pool index coherence, attribute well-formedness, etc..&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;`&lt;/p&gt;
+
+&lt;p&gt;JASM比较贴近原始的字节码，和通过javap生成的字节码差不多，修改指令的语义也比较容易。
+JCOD更好的描述了class文件的结构信息。&lt;/p&gt;
+
+&lt;p&gt;接下来通过一个简单类直观感受下。&lt;/p&gt;
+
+&lt;h2 id=&#34;使用asmtools汇编-反汇编&#34;&gt;使用asmtools汇编/反汇编&lt;/h2&gt;
+
+&lt;p&gt;class文件转为JASM格式：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;D:\dev\asmtools-7.0-build&amp;gt;javac Hello.java
+
+D:\dev\asmtools-7.0-build&amp;gt;java -jar asmtools.jar jdis Hello.class
+
+super public class Hello
+        version 52:0
+{
+
+
+public Method &amp;quot;&amp;lt;init&amp;gt;&amp;quot;:&amp;quot;()V&amp;quot;
+        stack 1 locals 1
+{
+                aload_0;
+                invokespecial   Method java/lang/Object.&amp;quot;&amp;lt;init&amp;gt;&amp;quot;:&amp;quot;()V&amp;quot;;
+                return;
+}
+
+public static Method main:&amp;quot;([Ljava/lang/String;)V&amp;quot;
+        stack 2 locals 1
+{
+                getstatic       Field java/lang/System.out:&amp;quot;Ljava/io/PrintStream;&amp;quot;;
+                ldc     String &amp;quot;Hello&amp;quot;;
+                invokevirtual   Method java/io/PrintStream.println:&amp;quot;(Ljava/lang/String;)V&amp;quot;;
+                return;
+}
+
+} // end Class Hello
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;使用javap得到的反汇编结果：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;D:\dev\asmtools-7.0-build&amp;gt;javap -c Hello.class
+Compiled from &amp;quot;Hello.java&amp;quot;
+public class Hello {
+  public Hello();
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object.&amp;quot;&amp;lt;init&amp;gt;&amp;quot;:()V
+       4: return
+
+  public static void main(java.lang.String[]);
+    Code:
+       0: getstatic     #2                  // Field java/lang/System.out:Ljava/io/PrintStream;
+       3: ldc           #3                  // String Hello
+       5: invokevirtual #4                  // Method java/io/PrintStream.println:(Ljava/lang/String;)V
+       8: return
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;class文件转为JCOD格式：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;D:\dev\asmtools-7.0-build&amp;gt;java -jar asmtools.jar jdec Hello.class
+class Hello {
+  0xCAFEBABE;
+  0; // minor version
+  52; // version
+  [] { // Constant Pool
+    ; // first element is empty
+    Method #6 #15; // #1
+    Field #16 #17; // #2
+    String #18; // #3
+    Method #19 #20; // #4
+    class #18; // #5
+    class #21; // #6
+    Utf8 &amp;quot;&amp;lt;init&amp;gt;&amp;quot;; // #7
+    Utf8 &amp;quot;()V&amp;quot;; // #8
+    Utf8 &amp;quot;Code&amp;quot;; // #9
+    Utf8 &amp;quot;LineNumberTable&amp;quot;; // #10
+    Utf8 &amp;quot;main&amp;quot;; // #11
+    Utf8 &amp;quot;([Ljava/lang/String;)V&amp;quot;; // #12
+    Utf8 &amp;quot;SourceFile&amp;quot;; // #13
+    Utf8 &amp;quot;Hello.java&amp;quot;; // #14
+    NameAndType #7 #8; // #15
+    class #22; // #16
+    NameAndType #23 #24; // #17
+    Utf8 &amp;quot;Hello&amp;quot;; // #18
+    class #25; // #19
+    NameAndType #26 #27; // #20
+    Utf8 &amp;quot;java/lang/Object&amp;quot;; // #21
+    Utf8 &amp;quot;java/lang/System&amp;quot;; // #22
+    Utf8 &amp;quot;out&amp;quot;; // #23
+    Utf8 &amp;quot;Ljava/io/PrintStream;&amp;quot;; // #24
+    Utf8 &amp;quot;java/io/PrintStream&amp;quot;; // #25
+    Utf8 &amp;quot;println&amp;quot;; // #26
+    Utf8 &amp;quot;(Ljava/lang/String;)V&amp;quot;; // #27
+  } // Constant Pool
+
+  0x0021; // access
+  #5;// this_cpx
+  #6;// super_cpx
+
+  [] { // Interfaces
+  } // Interfaces
+
+  [] { // fields
+  } // fields
+
+  [] { // methods
+    { // Member
+      0x0001; // access
+      #7; // name_cpx
+      #8; // sig_cpx
+      [] { // Attributes
+        Attr(#9) { // Code
+          1; // max_stack
+          1; // max_locals
+          Bytes[]{
+            0x2AB70001B1;
+          }
+          [] { // Traps
+          } // end Traps
+          [] { // Attributes
+            Attr(#10) { // LineNumberTable
+              [] { // LineNumberTable
+                0  1;
+              }
+            } // end LineNumberTable
+          } // Attributes
+        } // end Code
+      } // Attributes
+    } // Member
+    ;
+    { // Member
+      0x0009; // access
+      #11; // name_cpx
+      #12; // sig_cpx
+      [] { // Attributes
+        Attr(#9) { // Code
+          2; // max_stack
+          1; // max_locals
+          Bytes[]{
+            0xB200021203B60004;
+            0xB1;
+          }
+          [] { // Traps
+          } // end Traps
+          [] { // Attributes
+            Attr(#10) { // LineNumberTable
+              [] { // LineNumberTable
+                0  3;
+                8  4;
+              }
+            } // end LineNumberTable
+          } // Attributes
+        } // end Code
+      } // Attributes
+    } // Member
+  } // methods
+
+  [] { // Attributes
+    Attr(#13) { // SourceFile
+      #14;
+    } // end SourceFile
+  } // Attributes
+} // end class Hello
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;从jasm，jcod格式生成class文件：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;D:\dev\asmtools-7.0-build&amp;gt;java -jar asmtools.jar jcoder Hello.jcod
+
+D:\dev\asmtools-7.0-build&amp;gt;java -jar asmtools.jar jcoder Hello.jcod
+
+D:\dev\asmtools-7.0-build&amp;gt;java Hello
+Hello
+
+D:\dev\asmtools-7.0-build&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;修改字节码&#34;&gt;修改字节码&lt;/h2&gt;
+
+&lt;p&gt;接下来展示一个使用asmtools修改字节码的例子。原始类：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;public class Foo {
+  static boolean bv;
+  public static void main(String[] args) {
+    bv = true;
+    if (bv) {
+      System.out.println(&amp;quot;Hello, Java!&amp;quot;);
+    }
+    if (bv == true){
+      System.out.println(&amp;quot;Hello, JVM!&amp;quot;);
+    } 
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;运行后输出：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;Hello, Java!
+Hello, JVM!
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;对应的JASM格式反汇编内容：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;super public class Foo
+    version 52:0
+{
+
+static Field bv:Z;
+
+public Method &amp;quot;&amp;lt;init&amp;gt;&amp;quot;:&amp;quot;()V&amp;quot;
+    stack 1 locals 1
+{
+        aload_0;
+        invokespecial   Method java/lang/Object.&amp;quot;&amp;lt;init&amp;gt;&amp;quot;:&amp;quot;()V&amp;quot;;
+        return;
+}
+
+public static Method main:&amp;quot;([Ljava/lang/String;)V&amp;quot;
+    stack 2 locals 1
+{
+        iconst_1;  # 入栈常量1
+        putstatic   Field bv:&amp;quot;Z&amp;quot;;
+        getstatic   Field bv:&amp;quot;Z&amp;quot;;
+        ifeq    L18; 
+        getstatic   Field java/lang/System.out:&amp;quot;Ljava/io/PrintStream;&amp;quot;;
+        ldc String &amp;quot;Hello, Java!&amp;quot;;
+        invokevirtual   Method java/io/PrintStream.println:&amp;quot;(Ljava/lang/String;)V&amp;quot;;
+    L18:    stack_frame_type same;
+        getstatic   Field bv:&amp;quot;Z&amp;quot;;
+        iconst_1;
+        if_icmpne   L33;  # 比较
+        getstatic   Field java/lang/System.out:&amp;quot;Ljava/io/PrintStream;&amp;quot;;
+        ldc String &amp;quot;Hello, JVM!&amp;quot;;
+        invokevirtual   Method java/io/PrintStream.println:&amp;quot;(Ljava/lang/String;)V&amp;quot;;
+    L33:    stack_frame_type same;
+        return;
+}
+
+} // end Class Foo
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;可以从中看到java中的true在字节码层面使用的int 1表示的。&lt;/p&gt;
+
+&lt;p&gt;如果修改下Foo.jasm。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;super public class Foo
+    version 52:0
+{
+
+static Field bv:Z;
+
+public Method &amp;quot;&amp;lt;init&amp;gt;&amp;quot;:&amp;quot;()V&amp;quot;
+    stack 1 locals 1
+{
+        aload_0;
+        invokespecial   Method java/lang/Object.&amp;quot;&amp;lt;init&amp;gt;&amp;quot;:&amp;quot;()V&amp;quot;;
+        return;
+}
+
+public static Method main:&amp;quot;([Ljava/lang/String;)V&amp;quot;
+    stack 2 locals 1
+{
+        iconst_1;
+        putstatic   Field bv:&amp;quot;Z&amp;quot;;
+        getstatic   Field bv:&amp;quot;Z&amp;quot;;
+        ifeq    L18;
+        getstatic   Field java/lang/System.out:&amp;quot;Ljava/io/PrintStream;&amp;quot;;
+        ldc String &amp;quot;Hello, Java!&amp;quot;;
+        invokevirtual   Method java/io/PrintStream.println:&amp;quot;(Ljava/lang/String;)V&amp;quot;;
+    L18:    stack_frame_type same;
+        getstatic   Field bv:&amp;quot;Z&amp;quot;;
+        iconst_2;  # 修改了这里
+        if_icmpne   L33;
+        getstatic   Field java/lang/System.out:&amp;quot;Ljava/io/PrintStream;&amp;quot;;
+        ldc String &amp;quot;Hello, JVM!&amp;quot;;
+        invokevirtual   Method java/io/PrintStream.println:&amp;quot;(Ljava/lang/String;)V&amp;quot;;
+    L33:    stack_frame_type same;
+        return;
+}
+
+} // end Class Foo
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;把第二个iconst_1修改为iconst_2也就是把 1 和2比较，会得到下面的输出：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ java -jar  asmtools.jar jasm Foo.jasm &amp;gt; Foo.class
+
+$ java Foo
+Hello, Java!
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;相关阅读&#34;&gt;相关阅读&lt;/h2&gt;
+
+&lt;p&gt;&lt;a href=&#34;https://zhuanlan.zhihu.com/p/23068093&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;Java Class文件结构分析&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&#34;https://wiki.openjdk.java.net/display/CodeTools/asmtools&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;AsmTools&lt;/a&gt;&lt;/p&gt;
 </description>
     </item>
     
     <item>
-      <title>RocketMQ源码阅读 -  从消息发送到存储</title>
-      <link>http://vonzhou.com/2016/rocketmq-from-msg-send-to-store/</link>
-      <pubDate>Tue, 30 Aug 2016 00:00:00 +0000</pubDate>
+      <title>深入理解条件变量 Condition</title>
+      <link>http://vonzhou.com/2018/java-condition/</link>
+      <pubDate>Sun, 11 Nov 2018 00:00:00 +0000</pubDate>
       
-      <guid>http://vonzhou.com/2016/rocketmq-from-msg-send-to-store/</guid>
+      <guid>http://vonzhou.com/2018/java-condition/</guid>
       <description>
 
-&lt;h2 id=&#34;rocketmq-简介&#34;&gt;RocketMQ 简介&lt;/h2&gt;
+&lt;h2 id=&#34;序&#34;&gt;序&lt;/h2&gt;
 
-&lt;p&gt;RocketMQ 是一款开源的消息中间件，采用Java实现，设计思想来自于Kafka（Scala实现）。接下来是自己阅读源码的一些探索。&lt;/p&gt;
+&lt;p&gt;可重入锁（&lt;code&gt;ReentrantLock&lt;/code&gt;）是 &lt;code&gt;synchronized&lt;/code&gt; 关键字的扩展，更加灵活。还有一种&lt;code&gt;ReentrantLock&lt;/code&gt;应用场景是和&lt;code&gt;Condition&lt;/code&gt;搭配使用，实现多线程环境下等待状态条件的功能。&lt;code&gt;Object.wait&lt;/code&gt; 和 &lt;code&gt;Object.notify&lt;/code&gt; 是和 &lt;code&gt;synchronized&lt;/code&gt; 配合使用的，条件变量&lt;code&gt;Condition&lt;/code&gt;是和&lt;code&gt;ReentrantLock&lt;/code&gt;相关联的。&lt;/p&gt;
 
-&lt;p&gt;RocketMQ的整体架构如下，可以看到各个组件充当的角色，Name Server 负责维护一些全局的路由信息：当前有哪些broker，每个Topic在哪个broker上; Broker具体处理消息的存储和服务；生产者和消费者是消息的源头和归宿。&lt;/p&gt;
+&lt;p&gt;接下来先通过一个Demo看看&lt;code&gt;Condition&lt;/code&gt;的用法，然后列举两个应用的地方，最后分析其源码实现。&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/RocketMQ-arch.jpg&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+&lt;h2 id=&#34;一个简单demo&#34;&gt;一个简单Demo&lt;/h2&gt;
 
-&lt;h2 id=&#34;producer-发送消息&#34;&gt;Producer 发送消息&lt;/h2&gt;
+&lt;p&gt;先通过一个Demo看看怎么使用&lt;code&gt;Condition&lt;/code&gt;，主线程通知条件满足，通过另一个线程继续运行，可以看到的是&lt;code&gt;Condition.wait/signal&lt;/code&gt;方法需要和一个&lt;code&gt;ReentrantLock&lt;/code&gt;绑定。&lt;/p&gt;
 
-&lt;p&gt;Producer发送消息是如何得知发到哪个broker的 ？ 每个应用在收发消息之前，一般会调用一次&lt;code&gt;producer.start()/consumer.start()&lt;/code&gt;做一些初始化工作，其中包括：创建需要的实例对象，如&lt;code&gt;MQClientInstance&lt;/code&gt;；设置定时任务，如从Nameserver中定时更新本地的&lt;code&gt;Topic route info&lt;/code&gt;，发送心跳信息到所有的 broker，动态调整线程池的大小，把当前producer加入到指定的组中等等。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class ReenterLockCondition implements Runnable {
+    public static ReentrantLock lock = new ReentrantLock();
+    public static Condition condition = lock.newCondition();
 
-&lt;p&gt;客户端会缓存路由信息&lt;code&gt;TopicPublishInfo&lt;/code&gt;, 同时定期从NameServer取Topic路由信息，每个Broker与NameServer集群中的所有节点建立长连接，定时注册Topic信息到所有的NameServer。&lt;/p&gt;
+    @Override
+    public void run() {
+        try {
+            lock.lock();
+            condition.await();
+            System.out.println(String.format(&amp;quot;条件满足，线程%s运行！&amp;quot;, Thread.currentThread().getName()));
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            lock.unlock();
+        }
 
-&lt;p&gt;Producer在发送消息的时候会去查询本地的topicPublishInfoTable（一个ConcurrentHashMap），如果没有命中的话就会询问NameServer得到路由信息(RequestCode=GET_ROUTEINTO_BY_TOPIC) 如果nameserver中也没有查询到（表示该主题的消息第一次发送），那么将会发送一个default的topic进行路由查询。具体过程如下图所示。&lt;/p&gt;
+    }
 
-&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/RocketMQ-producer-send.jpg&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+    public static void main(String args[]) throws InterruptedException {
+        ReenterLockCondition reenterLockCondition = new ReenterLockCondition();
+        Thread thread1 = new Thread(reenterLockCondition);
+        thread1.setName(&amp;quot;T1&amp;quot;);
+        thread1.start();
+        Thread.sleep(2000);
+        System.out.println(&amp;quot;通知T1条件满足&amp;quot;);
+        lock.lock();
+        condition.signal();
+        lock.unlock();
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;Producer 在得到了具体的通信地址后，发送过程就显而易见了。通过代码可以看到在选择消息队列进行发送时采用随机方式，同时和上一次发送的broker保持不同，防止热点。&lt;/p&gt;
+&lt;h2 id=&#34;应用举例-jdk-arrayblockingqueue&#34;&gt;应用举例：JDK ArrayBlockingQueue&lt;/h2&gt;
 
-&lt;h2 id=&#34;broker处理来自producer的消息&#34;&gt;Broker处理来自Producer的消息&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/java-condition-1.jpg&#34; alt=&#34;ArrayBlockingQueue类图&#34; /&gt;&lt;/p&gt;
 
-&lt;p&gt;每个producer在发送消息的时候都和对应的Broker建立了长连接，此时broker已经准备好接收Message，Broker的&lt;code&gt;SendMessageProcessor.sendMessage&lt;/code&gt;处理消息的存储，具体过程如下。接收到消息后，会先写入Commit Log文件（顺序写，写满了会新建一个新的文件），然后更新Consume queue文件（存储如何由topic定位到具体的消息）。&lt;/p&gt;
+&lt;p&gt;JDK并发包中的 &lt;code&gt;ArrayBlockingQueue&lt;/code&gt; 就使用了&lt;code&gt;Condition&lt;/code&gt;来同步队列的空/满状态。先看条件变量的定义：&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/RocketMQ-broker-msg-proc.jpg&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;/** Main lock guarding all access */
+final ReentrantLock lock;
 
-&lt;h2 id=&#34;rocketmq-存储特点&#34;&gt;RocketMQ 存储特点&lt;/h2&gt;
+/** Condition for waiting takes */
+private final Condition notEmpty;
 
-&lt;p&gt;RocketMQ的消息采用顺序写到commitlog文件，然后利用consume queue文件作为逻辑队列（索引），如图。RocketMQ采用零拷贝mmap+write的方式来回应Consumer的请求，RocketMQ宣称大部分请求都会在Page Cache层得到满足，所以消息过多不会因为磁盘读使得性能下降，这里自己的理解是，在64bit机器下，虚存地址空间（&lt;code&gt;vm_area_struct&lt;/code&gt;）不是问题，所以相关的文件都会被映射到内存中（有定期删除文件的操作），即使此刻不在内存，操作系统也会因为缺页异常进行换入，虽然地址空间不是问题，但是一个进程映射文件的个数(&lt;code&gt;/proc/sys/vm/max_map_count&lt;/code&gt;)是有限的，所以可能在这里发生OOM。&lt;/p&gt;
+/** Condition for waiting puts */
+private final Condition notFull;
 
-&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/RocketMQ-CommitLog.jpg&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+public ArrayBlockingQueue(int capacity, boolean fair) {
+    if (capacity &amp;lt;= 0)
+        throw new IllegalArgumentException();
+    this.items = new Object[capacity];
+    lock = new ReentrantLock(fair);
+    notEmpty = lock.newCondition();
+    notFull =  lock.newCondition();
+}
+&lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;通过Broker中的存储目录（默认路径是 $HOME/store）也能看到存储的逻辑视图：&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;ArrayBlockingQueue&lt;/code&gt; 构造的时候初始化了2个条件变量：非空，非满，他们都是和同一个重入锁关联的。&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/RocketMQ-store-directory.jpg&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;元素入队的时候，如果队列一直满的话就一直阻塞等待非满条件为真，否则的话就插入对应的元素，并且通知非空条件为真。&lt;/p&gt;
 
-&lt;h2 id=&#34;顺序消息是如何保证的&#34;&gt;顺序消息是如何保证的？&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public void put(E e) throws InterruptedException {
+    checkNotNull(e);
+    final ReentrantLock lock = this.lock;
+    lock.lockInterruptibly();
+    try {
+        while (count == items.length)
+            notFull.await();
+        enqueue(e);
+    } finally {
+        lock.unlock();
+    }
+}
 
-&lt;p&gt;需要业务层自己决定哪些消息应该顺序到达，然后发送的时候通过规则（hash）映射到同一个队列，因为没有谁比业务自己更加知道关于消息顺序的特点。这样的顺序是相对顺序，局部顺序，因为发送方只保证把这些消息顺序的发送到broker上的同一队列，但是不保证其他Producer也会发送消息到那个队列，所以需要Consumer在拉到消息后做一些过滤。&lt;/p&gt;
+private void enqueue(E x) {
+    // assert lock.getHoldCount() == 1;
+    // assert items[putIndex] == null;
+    final Object[] items = this.items;
+    items[putIndex] = x;
+    if (++putIndex == items.length)
+        putIndex = 0;
+    count++;
+    notEmpty.signal();
+}
+&lt;/code&gt;&lt;/pre&gt;
 
-&lt;h2 id=&#34;rocketmq-刷盘实现&#34;&gt;RocketMQ 刷盘实现&lt;/h2&gt;
+&lt;p&gt;同样的，出队的时候，如果队列没有元素就等待非空的条件为真，否则出队，并通知非满条件为真。&lt;/p&gt;
 
-&lt;p&gt;Broker 在消息的存取时直接操作的是内存（内存映射文件），这可以提供系统的吞吐量，但是无法避免机器掉电时数据丢失，所以需要持久化到磁盘中。刷盘的最终实现都是使用NIO中的 &lt;code&gt;MappedByteBuffer.force()&lt;/code&gt; 将映射区的数据写入到磁盘，如果是同步刷盘的话，在Broker把消息写到CommitLog映射区后，就会等待写入完成。异步而言，只是唤醒对应的线程，不保证执行的时机，流程如图所示。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public E take() throws InterruptedException {
+    final ReentrantLock lock = this.lock;
+    lock.lockInterruptibly();
+    try {
+        while (count == 0)
+            notEmpty.await();
+        return dequeue();
+    } finally {
+        lock.unlock();
+    }
+}
 
-&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/RocketMQ-disk-flush.jpg&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
-
-&lt;h2 id=&#34;消息过滤&#34;&gt;消息过滤&lt;/h2&gt;
-
-&lt;p&gt;类似于重复数据删除技术（Data Deduplication），可以在源端做，也可以在目的端实现，就是网络和存储的权衡，如果在Broker端做消息过滤就需要逐一比对consume queue 的 tagsCode 字段（hashcode）,如果符合则传输给消费者，因为是 hashcode，所以存在误判，需要在 Consumer 接收到消息后进行字符串级别的过滤，确保准确性。&lt;/p&gt;
-
-&lt;h2 id=&#34;小结&#34;&gt;小结&lt;/h2&gt;
-
-&lt;p&gt;这次代码阅读主要着眼于消息的发送过程和Broker上的存储，其他方面的细节有待深入。&lt;/p&gt;
-</description>
-    </item>
+private E dequeue() {
+    // assert lock.getHoldCount() == 1;
+    // assert items[takeIndex] != null;
+    final Object[] items = this.items;
+    @SuppressWarnings(&amp;quot;unchecked&amp;quot;)
+    E x = (E) items[takeIndex];
+    items[takeIndex] = null;
+    if (++takeIndex == items.length)
+        takeIndex = 0;
+    count--;
+    if (itrs != null)
+        itrs.elementDequeued();
+    notFull.signal();
+    return x;
+}
     
-    <item>
-      <title>2015阅读的书单</title>
-      <link>http://vonzhou.com/2016/2015-read-book/</link>
-      <pubDate>Wed, 06 Apr 2016 00:00:00 +0000</pubDate>
-      
-      <guid>http://vonzhou.com/2016/2015-read-book/</guid>
-      <description>
+    
+&lt;/code&gt;&lt;/pre&gt;
 
-&lt;h2 id=&#34;剑指offer-3-30&#34;&gt;《剑指offer》  -3.30&lt;/h2&gt;
+&lt;h2 id=&#34;应用举例-kafaka-bufferpool&#34;&gt;应用举例：Kafaka BufferPool&lt;/h2&gt;
 
-&lt;blockquote&gt;
-&lt;p&gt;找实习的阶段过了一遍，现在看来都忘了&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;&lt;code&gt;KafkaProducer&lt;/code&gt;里面有一个buffer pool的概念，&lt;code&gt;BufferPool&lt;/code&gt;里面内存分配，回收过程也有用到条件变量。&lt;/p&gt;
 
-&lt;h2 id=&#34;redis设计与实现-4-15&#34;&gt;《Redis设计与实现》- 4.15&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public ByteBuffer allocate(int size, long maxTimeToBlockMs) throws InterruptedException {
+    this.lock.lock();
+    try {
+        // check if we have a free buffer of the right size pooled
+        if (size == poolableSize &amp;amp;&amp;amp; !this.free.isEmpty())
+            return this.free.pollFirst();
 
-&lt;blockquote&gt;
-&lt;p&gt;完整读完，收获很大，需要结合代码深入&lt;/p&gt;
-&lt;/blockquote&gt;
+        // now check if the request is immediately satisfiable with the
+        // memory on hand or if we need to block
+        int freeListSize = this.free.size() * this.poolableSize;
+        if (this.availableMemory + freeListSize &amp;gt;= size) {
+            // 不断释放free队列中的buffer，直到可用内存&amp;gt;size
+            // we have enough unallocated or pooled memory to immediately
+            // satisfy the request
+            freeUp(size);
+            this.availableMemory -= size;
+            lock.unlock();
+            // 使用的不是free队列中的buffer，而是直接分配HeapByteBuffer
+            return ByteBuffer.allocate(size);
+        } else {
+            // 没有足够空间，阻塞
+            // we are out of memory and will have to block
+            int accumulated = 0;
+            ByteBuffer buffer = null;
+            Condition moreMemory = this.lock.newCondition();
+            long remainingTimeToBlockNs = TimeUnit.MILLISECONDS.toNanos(maxTimeToBlockMs);
+            this.waiters.addLast(moreMemory);
+            // loop over and over until we have a buffer or have reserved
+            // enough memory to allocate one
+            while (accumulated &amp;lt; size) {
+                long startWaitNs = time.nanoseconds();
+                long timeNs;
+                boolean waitingTimeElapsed;
+                try {
+                    waitingTimeElapsed = !moreMemory.await(remainingTimeToBlockNs, TimeUnit.NANOSECONDS);
+                } catch (InterruptedException e) {
+                    this.waiters.remove(moreMemory);
+                    throw e;
+                } finally {
+                    long endWaitNs = time.nanoseconds();
+                    timeNs = Math.max(0L, endWaitNs - startWaitNs);
+                    this.waitTime.record(timeNs, time.milliseconds());
+                }
 
-&lt;h2 id=&#34;算法-4th-4-2&#34;&gt;《算法 4th》  -4.2&lt;/h2&gt;
+                if (waitingTimeElapsed) {
+                    this.waiters.remove(moreMemory);
+                    throw new TimeoutException(&amp;quot;Failed to allocate memory within the configured max blocking time &amp;quot; + maxTimeToBlockMs + &amp;quot; ms.&amp;quot;);
+                }
 
-&lt;blockquote&gt;
-&lt;p&gt;结合公开课看了大部分，理解了更多&lt;/p&gt;
-&lt;/blockquote&gt;
+                remainingTimeToBlockNs -= timeNs;
+                // check if we can satisfy this request from the free list,
+                // otherwise allocate memory
+                if (accumulated == 0 &amp;amp;&amp;amp; size == this.poolableSize &amp;amp;&amp;amp; !this.free.isEmpty()) {
+                    // just grab a buffer from the free list
+                    buffer = this.free.pollFirst();
+                    accumulated = size;
+                } else {
+                    // 先分配一部分空间
+                    // we&#39;ll need to allocate memory, but we may only get
+                    // part of what we need on this iteration
+                    freeUp(size - accumulated);
+                    int got = (int) Math.min(size - accumulated, this.availableMemory);
+                    this.availableMemory -= got;
+                    accumulated += got;
+                }
+            }
 
-&lt;h2 id=&#34;深度解析sdn-张卫峰著-4-16&#34;&gt;《深度解析SDN / 张卫峰著 》      -4.16&lt;/h2&gt;
+            // 成功分配空间后，移除条件变量
+            // remove the condition for this thread to let the next thread
+            // in line start getting memory
+            Condition removed = this.waiters.removeFirst();
+            if (removed != moreMemory)
+                throw new IllegalStateException(&amp;quot;Wrong condition: this shouldn&#39;t happen.&amp;quot;);
 
-&lt;blockquote&gt;
-&lt;p&gt;大致浏览了下,明确大场景！&lt;/p&gt;
-&lt;/blockquote&gt;
+            // 如果还有剩余空间，还有等待线程，则唤醒
+            // signal any additional waiters if there is more memory left
+            // over for them
+            if (this.availableMemory &amp;gt; 0 || !this.free.isEmpty()) {
+                if (!this.waiters.isEmpty())
+                    this.waiters.peekFirst().signal();
+            }
 
-&lt;h2 id=&#34;破坏之王-ddos攻击与防范深度剖析-4-30&#34;&gt;《破坏之王-DDoS攻击与防范深度剖析》    -4.30&lt;/h2&gt;
+            // unlock and return the buffer
+            lock.unlock();
+            if (buffer == null)
+                return ByteBuffer.allocate(size);
+            else
+                return buffer;
+        }
+    } finally {
+        if (lock.isHeldByCurrentThread())
+            lock.unlock();
+    }
+}
+    
+public void deallocate(ByteBuffer buffer, int size) {
+    lock.lock();
+    try {
+        // 如果是poolableSize大小的buffer，则入free队列管理
+        if (size == this.poolableSize &amp;amp;&amp;amp; size == buffer.capacity()) {
+            buffer.clear();
+            this.free.add(buffer);
+        } else {
+            // 否则直接增加大小，分配的buffer由GC回收
+            this.availableMemory += size;
+        }
 
-&lt;blockquote&gt;
-&lt;p&gt;DoS科普！&lt;/p&gt;
-&lt;/blockquote&gt;
+        // 唤醒一个因内存分配得不到满足而阻塞的线程
+        Condition moreMem = this.waiters.peekFirst();
+        if (moreMem != null)
+            moreMem.signal();
+    } finally {
+        lock.unlock();
+    }
+}    
+&lt;/code&gt;&lt;/pre&gt;
 
-&lt;h2 id=&#34;大型网站技术架构-核心原理与技术分析-李智慧-5-2&#34;&gt;《大型网站技术架构.核心原理与技术分析 李智慧》     &amp;ndash;5.2&lt;/h2&gt;
+&lt;h2 id=&#34;condition-实现分析&#34;&gt;Condition 实现分析&lt;/h2&gt;
 
-&lt;blockquote&gt;
-&lt;p&gt;五一两天过了一遍该书  ，宏观上有了眼界的开阔。&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;接下来看看条件变量是怎么实现的？可重入锁关联的条件变量实现类是AQS内部类&lt;code&gt;ConditionObject&lt;/code&gt;，接下来通过其中的await和signal方法的源码看看&lt;code&gt;Condition&lt;/code&gt;的实现。&lt;/p&gt;
 
-&lt;h2 id=&#34;masters-of-doom-5-8&#34;&gt;《Masters of Doom》   &amp;ndash;5.8&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/ConditionObject.png&#34; alt=&#34;ConditionObject类结构&#34; /&gt;&lt;/p&gt;
 
-&lt;blockquote&gt;
-&lt;p&gt;一口气读完，很吸引人，激动人心，对技术的着迷，用技术创造世界！&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;h3 id=&#34;await&#34;&gt;await&lt;/h3&gt;
 
-&lt;h2 id=&#34;小王子-5-8&#34;&gt;《小王子》    &amp;ndash;5.8&lt;/h2&gt;
+&lt;p&gt;调用 Condition.await 方法前需要拥有锁，await 会释放锁&lt;code&gt;fullyRelease&lt;/code&gt;。&lt;/p&gt;
 
-&lt;blockquote&gt;
-&lt;p&gt;很小的一本书，驯服就是发生联系，真正美好的是看不见的一面。&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public final void await() throws InterruptedException {
+    if (Thread.interrupted())
+        throw new InterruptedException();
+    Node node = addConditionWaiter();
+    
+    // 释放关联的锁
+    int savedState = fullyRelease(node);
+    int interruptMode = 0;
+    
+    // 如果该节点没有放入同步队列(sync queue)，则阻塞等待
+    while (!isOnSyncQueue(node)) {
+        LockSupport.park(this);
+        if ((interruptMode = checkInterruptWhileWaiting(node)) != 0)
+            break;
+    }
+    
+    // 节点进入了同步队列，则争用锁，锁获取成功后，await就退出了
+    if (acquireQueued(node, savedState) &amp;amp;&amp;amp; interruptMode != THROW_IE)
+        interruptMode = REINTERRUPT;
+    if (node.nextWaiter != null) // clean up if cancelled
+        unlinkCancelledWaiters();
+    if (interruptMode != 0)
+        reportInterruptAfterWait(interruptMode);
+}
+&lt;/code&gt;&lt;/pre&gt;
 
-&lt;h2 id=&#34;活着-余华-5-10&#34;&gt;《活着-余华》    &amp;ndash;5.10&lt;/h2&gt;
+&lt;h3 id=&#34;条件队列&#34;&gt;条件队列&lt;/h3&gt;
 
-&lt;blockquote&gt;
-&lt;p&gt;连续几天晚上读完，感动至哭，活着，哪怕贫穷。&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;将当前线程加入到条件等待队列。&lt;/p&gt;
 
-&lt;h2 id=&#34;动物庄园-5-17&#34;&gt;《动物庄园》  &amp;ndash;5.17&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;// 新增一个条件节点
+private Node addConditionWaiter() {
+    Node t = lastWaiter;
+    // If lastWaiter is cancelled, clean out.
+    if (t != null &amp;amp;&amp;amp; t.waitStatus != Node.CONDITION) {
+        unlinkCancelledWaiters();
+        t = lastWaiter;
+    }
+    Node node = new Node(Thread.currentThread(), Node.CONDITION);
+    if (t == null)
+        firstWaiter = node;
+    else
+        t.nextWaiter = node;
+    lastWaiter = node;
+    return node;
+}
+&lt;/code&gt;&lt;/pre&gt;
 
-&lt;blockquote&gt;
-&lt;p&gt;寓意深刻，最终分不清他们是猪，还是人？所谓的平等真的存在吗？&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;h3 id=&#34;锁释放&#34;&gt;锁释放&lt;/h3&gt;
 
-&lt;h2 id=&#34;crypto101-5-19&#34;&gt;《Crypto101》   &amp;mdash;   5.19&lt;/h2&gt;
+&lt;p&gt;AQS的方法。&lt;code&gt;getState()&lt;/code&gt;方法获取的就是AQS里面的state变量，在&lt;code&gt;ReentrantLock&lt;/code&gt;中，其实state保存的是重入的次数（参考《可重入锁ReentrantLock源码阅读》）。&lt;/p&gt;
 
-&lt;blockquote&gt;
-&lt;p&gt;虽然是英文书，但是写的很好懂，明确了技术存在的原因，该是自己入门密码学的第一本书，然后再具体的实践，会关注更新后的版本！&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;final int fullyRelease(Node node) {
+    boolean failed = true;
+    try {
+        int savedState = getState();
+        if (release(savedState)) {
+            failed = false;
+            return savedState;
+        } else {
+            throw new IllegalMonitorStateException();
+        }
+    } finally {
+        if (failed)
+            node.waitStatus = Node.CANCELLED;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
 
-&lt;h2 id=&#34;王小波-沉默的大多数人-6-2&#34;&gt;王小波《沉默的大多数人》   &amp;ndash; 6.2&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;ReentrantLock.Sync.tryRelease&lt;/code&gt;的实现如下，可以看到不管重入了多少次都会一次性释放。&lt;/p&gt;
 
-&lt;blockquote&gt;
-&lt;p&gt;做一个有趣的人，敢于有自己的想法，不只是苟且活着！&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;protected final boolean tryRelease(int releases) {
+    int c = getState() - releases;
+    if (Thread.currentThread() != getExclusiveOwnerThread())
+        throw new IllegalMonitorStateException();
+    boolean free = false;
+    if (c == 0) {
+        free = true;
+        setExclusiveOwnerThread(null);
+    }
+    setState(c);
+    return free;
+}
+&lt;/code&gt;&lt;/pre&gt;
 
-&lt;h2 id=&#34;深入理解java虚拟机-周志明-6-7&#34;&gt;《深入理解Java虚拟机 周志明》   &amp;ndash;6.7&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;fullyRelease&lt;/code&gt;返回之前的重入次数，后续会用到。&lt;/p&gt;
 
-&lt;blockquote&gt;
-&lt;p&gt;都说Java程序员不着地，但是我是深究底层的人！看完这本书虽不能让你说懂JVM，但是至少可以让你知道整体的生态，可以自己去深入学习，这方面的书籍并不多，需要看规范文档。&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;h3 id=&#34;阻塞等待条件满足&#34;&gt;阻塞等待条件满足&lt;/h3&gt;
 
-&lt;h2 id=&#34;奥威尔-1984-http-book-douban-com-subject-4820710-6-13&#34;&gt;&lt;a href=&#34;http://book.douban.com/subject/4820710/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;奥威尔《1984》&lt;/a&gt;     &amp;ndash;6.13&lt;/h2&gt;
+&lt;p&gt;await 释放锁后进入阻塞等待状态，阻塞的条件是该节点没有在SyncQueue上：&lt;/p&gt;
 
-&lt;blockquote&gt;
-&lt;p&gt;“战争即和平，自由即奴役，无知即力量”，权利的机器不论哪个朝代都是存在的，所幸1984没有成为现实！&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;final boolean isOnSyncQueue(Node node) {
+    if (node.waitStatus == Node.CONDITION || node.prev == null)
+        return false;
+    if (node.next != null) // If has successor, it must be on queue
+        return true;
+    /*
+     * node.prev can be non-null, but not yet on queue because
+     * the CAS to place it on queue can fail. So we have to
+     * traverse from tail to make sure it actually made it.  It
+     * will always be near the tail in calls to this method, and
+     * unless the CAS failed (which is unlikely), it will be
+     * there, so we hardly ever traverse much.
+     */
+    return findNodeFromTail(node);
+}
+``
 
-&lt;h2 id=&#34;head-first-servlet-jsp-http-book-douban-com-subject-3223139-6-14&#34;&gt;&lt;a href=&#34;http://book.douban.com/subject/3223139/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《Head First Servlet &amp;amp; JSP 》&lt;/a&gt;   &amp;ndash;6.14&lt;/h2&gt;
+signal的时候该方法会返回true。
 
-&lt;blockquote&gt;
-&lt;p&gt;虽然之前写过web程序，但是有些东西并没有理清，这本书很形象生动，引人入胜，看完之后各个组件和流程就非常清晰了：MVC架构，属性监听器，JSP脚本，EL，JSTL，标记文件，WEB部署的架构，过滤器等等，感受到了约定大于配置。当然这只是入门，需要多看多写，才会有发言权。&lt;/p&gt;
-&lt;/blockquote&gt;
+### 重获锁
 
-&lt;h2 id=&#34;java加密与解密的艺术-2nd-5-17-6-15&#34;&gt;《Java加密与解密的艺术 2nd》    &amp;ndash;5.17-6.15&lt;/h2&gt;
+条件满足后，需要重新获取锁，acquireQueued会调到ReentrantLock.tryAcquire，此处可以看到保存前面`savedState`的作用。
 
-&lt;blockquote&gt;
-&lt;p&gt;没有关于算法如何实现的分析，更没有各种算法的比较抉择，如果纯粹想用java实现的话，可以自己看API，所以这本书没有体现所谓的艺术，很多冗余代码的堆砌，虽然也有参考价值。这本书大概看了一大半，没有应用的驱动，显得枯燥，倒不如看看具体算法的实现，当用到某种算法的时候再寻求API是如何实现的。&lt;/p&gt;
-&lt;/blockquote&gt;
+### signal
 
-&lt;h2 id=&#34;重来-rework-http-book-douban-com-subject-5320866-6-21&#34;&gt;&lt;a href=&#34;http://book.douban.com/subject/5320866/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《重来 Rework》&lt;/a&gt;                         &amp;ndash;6.21&lt;/h2&gt;
+唤醒就是把等待队列中的第一个节点转移到同步队列。
 
-&lt;blockquote&gt;
-&lt;p&gt;这是第二遍阅读，这本书简洁优美，里面讲述的也是作者真实的创业感受，无论创业与否，都会从中学到很多，有了灵感就应该行动起来，知道自己要做什么，才会勇敢说不，甘于低微，吸引属于自己的观众。&lt;/p&gt;
-&lt;/blockquote&gt;
+​```java
+public final void signal() {
+    // 先判断当前线程是否获取了锁，否则异常
+    if (!isHeldExclusively())
+        throw new IllegalMonitorStateException();
+    Node first = firstWaiter;
+    if (first != null)
+        doSignal(first);
+}
 
-&lt;h2 id=&#34;数据之巅-涂子沛-8-19&#34;&gt;《数据之巅.涂子沛》 &amp;ndash;8.19&lt;/h2&gt;
+// 摘除头节点，把头节点移到同步队列
+private void doSignal(Node first) {
+    do {
+        if ( (firstWaiter = first.nextWaiter) == null)
+            lastWaiter = null;
+        first.nextWaiter = null;
+    } while (!transferForSignal(first) &amp;amp;&amp;amp;
+             (first = firstWaiter) != null);
+}
 
-&lt;blockquote&gt;
-&lt;p&gt;这两天一口气把该书读完了，从美国的几个历史阶段中阐述了数据的价值，人口普查，统计分析，抽样，可视化，以及美国政府的信息公开，都是值得我们学习的。又是一个新的浪潮，是跟随还是引领，需要数据科学的普及。&lt;/p&gt;
-&lt;/blockquote&gt;
+final boolean transferForSignal(Node node) {
+     // CAS 将状态设置为0,0是一个无效的状态
+    if (!compareAndSetWaitStatus(node, Node.CONDITION, 0))
+        return false;
 
-&lt;h2 id=&#34;异类-http-book-douban-com-subject-3688489-8-22&#34;&gt;&lt;a href=&#34;http://book.douban.com/subject/3688489/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《异类》&lt;/a&gt; &amp;ndash;8.22&lt;/h2&gt;
+    /*
+     * Splice onto queue and try to set waitStatus of predecessor to
+     * indicate that thread is (probably) waiting. If cancelled or
+     * attempt to set waitStatus fails, wake up to resync (in which
+     * case the waitStatus can be transiently and harmlessly wrong).
+     */
+    Node p = enq(node);
+    int ws = p.waitStatus;
+    
+    // 唤醒线程
+    if (ws &amp;gt; 0 || !compareAndSetWaitStatus(p, ws, Node.SIGNAL))
+        LockSupport.unpark(node.thread);
+    return true;
+}
 
-&lt;blockquote&gt;
-&lt;p&gt;一万小时定律？机遇对成功的重要性？现在所做的任何事件点滴积累，串在一起，决定了我们的明天是成功还是失败。&lt;/p&gt;
-&lt;/blockquote&gt;
+// 这个方法是AQS中的，node进入同步队列
+private Node enq(final Node node) {
+    for (;;) {
+        Node t = tail;
+        if (t == null) { // Must initialize
+            if (compareAndSetHead(new Node()))
+                tail = head;
+        } else {
+            node.prev = t;
+            if (compareAndSetTail(t, node)) {
+                t.next = node;
+                return t;
+            }
+        }
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
 
-&lt;h2 id=&#34;平凡的世界-http-book-douban-com-subject-1084165-10-31&#34;&gt;&lt;a href=&#34;http://book.douban.com/subject/1084165/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《平凡的世界》&lt;/a&gt;  &amp;ndash;10.31&lt;/h2&gt;
+&lt;h3 id=&#34;signalall&#34;&gt;signalAll&lt;/h3&gt;
 
-&lt;blockquote&gt;
-&lt;p&gt;每个角色都在自己的范围内努力做着不平凡的事情，有着黄土地的烙印，也不放弃见识更广阔的世界。只能把艰辛的劳动看作是生命的必要，即使没有收获的指望&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;转移所有的等待节点。&lt;/p&gt;
 
-&lt;h2 id=&#34;岛上书店-http-book-douban-com-subject-26340138-11-29&#34;&gt;&lt;a href=&#34;http://book.douban.com/subject/26340138/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《岛上书店》&lt;/a&gt;   &amp;ndash;11.29&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private void doSignalAll(Node first) {
+    lastWaiter = firstWaiter = null;
+    do {
+        Node next = first.nextWaiter;
+        first.nextWaiter = null;
+        transferForSignal(first);
+        first = next;
+    } while (first != null);
+}
+&lt;/code&gt;&lt;/pre&gt;
 
-&lt;blockquote&gt;
-&lt;p&gt;简单却有触动，或许正如书中所说，有些书每个阶段读出不同的味道，读人也是如此吧。&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;h2 id=&#34;linux环境下的条件变量&#34;&gt;Linux环境下的条件变量&lt;/h2&gt;
 
-&lt;h2 id=&#34;网易掌门人丁磊-http-book-douban-com-subject-4001603-12-8&#34;&gt;&lt;a href=&#34;http://book.douban.com/subject/4001603/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《网易掌门人丁磊》&lt;/a&gt;      &amp;ndash;12.8&lt;/h2&gt;
+&lt;p&gt;了解Linux环境编程的会想到其中也有条件变量的机制来实现线程之间的同步，和Java中的基本上语义是相同的，在等待条件的时候都会原子的释放锁。&lt;/p&gt;
 
-&lt;blockquote&gt;
-&lt;p&gt;大概了解网易&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/java-condition-3.jpg&#34; alt=&#34;pthread_wait&#34; /&gt;&lt;/p&gt;
 
-&lt;h2 id=&#34;人类简史-http-book-douban-com-subject-25985021-from-tag-12-12&#34;&gt;&lt;a href=&#34;http://book.douban.com/subject/25985021/?from=tag&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;《人类简史》&lt;/a&gt;  &amp;ndash;12.12&lt;/h2&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;很不错，文采华丽&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;h2 id=&#34;我们最幸福-http-book-douban-com-subject-26364714-12-21&#34;&gt;&lt;a href=&#34;http://book.douban.com/subject/26364714/&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;我们最幸福&lt;/a&gt;    &amp;ndash; 12.21&lt;/h2&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;想到了奥威尔的1984，每个时代都有其黑暗，但是最怕的是生活在自己的谎言中，不愿承认自己的弱点。&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;h2 id=&#34;黑客-12-28&#34;&gt;[黑客 ]()       &amp;ndash;12.28&lt;/h2&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;么是黑客道德？追求信息共享，不断获得突破的信仰。当黑客道德和现实世界冲突的时候如何决策？一个企业有这种选择，对于个人说同样有这个问题。理想主义和社交，商业化之间的矛盾。
-从MIT的铁路俱乐部，到微型电脑的商业化，到如今的万物互联，从亚文化发展为一种主流文化，技术改变了世界。
-那个时代的黑客，有一种特立独行的姿态，追求自己的真正所爱，构建自己的文化，然后推动一个行业，改变每个人的生活，从硬件黑客，到系统黑客，现在很少能做到那时 的激情，知识快速的迭代产品。
-每个人都有各自的特点，然后做出不同的转变，曾今黑客道德和商业模式的矛盾斗争，或许会慢慢找到和谐的融合方式，用技术撑起一个商业帝国。&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/java-condition-4.jpg&#34; alt=&#34;pthread_signal&#34; /&gt;&lt;/p&gt;
 </description>
     </item>
     

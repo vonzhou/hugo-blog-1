@@ -23,7 +23,7 @@
     </url>
   
     <url>
-      <loc>http://vonzhou.com/2019/%E6%B3%A2%E5%85%B0%E6%9D%A5%E5%AE%A2/</loc>
+      <loc>http://vonzhou.com/2019/bo-lan-lai-ke/</loc>
       
       <lastmod>2019-03-15T11:03:31+08:00</lastmod>
       
@@ -43,6 +43,16 @@
     </url>
   
     <url>
+      <loc>http://vonzhou.com/2019/kafka-producer-fullgc-story/</loc>
+      
+      <lastmod>2019-03-01T00:00:00+00:00</lastmod>
+      
+      
+      
+      
+    </url>
+  
+    <url>
       <loc>http://vonzhou.com/2019/spring-beanutils-copyproperties/</loc>
       
       <lastmod>2019-02-27T00:00:00+00:00</lastmod>
@@ -53,9 +63,39 @@
     </url>
   
     <url>
+      <loc>http://vonzhou.com/2019/jvm-gc-summary/</loc>
+      
+      <lastmod>2019-02-21T00:00:00+00:00</lastmod>
+      
+      
+      
+      
+    </url>
+  
+    <url>
       <loc>http://vonzhou.com/2019/enum-singleton/</loc>
       
       <lastmod>2019-02-14T00:00:00+00:00</lastmod>
+      
+      
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/2019/kafka-consumer-rebalance-jitter/</loc>
+      
+      <lastmod>2019-01-30T00:00:00+00:00</lastmod>
+      
+      
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/2018/integercache/</loc>
+      
+      <lastmod>2018-12-19T00:00:00+00:00</lastmod>
       
       
       
@@ -83,6 +123,106 @@
     </url>
   
     <url>
+      <loc>http://vonzhou.com/2018/disruptor-vs-arrayblockingqueue/</loc>
+      
+      <lastmod>2018-12-01T00:00:00+00:00</lastmod>
+      
+      
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/2018/asmtools-intro/</loc>
+      
+      <lastmod>2018-11-27T00:00:00+00:00</lastmod>
+      
+      
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/2018/java-condition/</loc>
+      
+      <lastmod>2018-11-11T00:00:00+00:00</lastmod>
+      
+      
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/2018/kafka-source-begin/</loc>
+      
+      <lastmod>2018-11-07T00:00:00+00:00</lastmod>
+      
+      
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/2018/zuul-forward-multipart-and-json/</loc>
+      
+      <lastmod>2018-10-10T00:00:00+00:00</lastmod>
+      
+      
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/2018/disruptor-consume-pattern/</loc>
+      
+      <lastmod>2018-09-28T00:00:00+00:00</lastmod>
+      
+      
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/2018/disruptor-get-started/</loc>
+      
+      <lastmod>2018-09-21T00:00:00+00:00</lastmod>
+      
+      
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/2018/cas/</loc>
+      
+      <lastmod>2018-09-19T00:00:00+00:00</lastmod>
+      
+      
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/2018/spring-boot-init-methods/</loc>
+      
+      <lastmod>2018-09-18T00:00:00+00:00</lastmod>
+      
+      
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/2018/kafka-cleanup-policy/</loc>
+      
+      <lastmod>2018-09-14T00:00:00+00:00</lastmod>
+      
+      
+      
+      
+    </url>
+  
+    <url>
       <loc>http://vonzhou.com/2018/redis-expire/</loc>
       
       <lastmod>2018-09-09T00:00:00+00:00</lastmod>
@@ -93,9 +233,39 @@
     </url>
   
     <url>
+      <loc>http://vonzhou.com/2018/make-arraylist-thread-safe/</loc>
+      
+      <lastmod>2018-09-07T00:00:00+00:00</lastmod>
+      
+      
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/2018/spring-boot-speedup/</loc>
+      
+      <lastmod>2018-09-04T00:00:00+00:00</lastmod>
+      
+      
+      
+      
+    </url>
+  
+    <url>
       <loc>http://vonzhou.com/2018/linux-commands/</loc>
       
       <lastmod>2018-08-31T00:00:00+00:00</lastmod>
+      
+      
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/2018/arraylist-thread-safe-problem/</loc>
+      
+      <lastmod>2018-07-12T00:00:00+00:00</lastmod>
       
       
       
@@ -123,9 +293,39 @@
     </url>
   
     <url>
+      <loc>http://vonzhou.com/2016/spring-bean-instantiation/</loc>
+      
+      <lastmod>2016-09-02T00:00:00+00:00</lastmod>
+      
+      
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/2016/spring-bean-parse/</loc>
+      
+      <lastmod>2016-09-01T00:00:00+00:00</lastmod>
+      
+      
+      
+      
+    </url>
+  
+    <url>
       <loc>http://vonzhou.com/2016/rocketmq-from-msg-send-to-store/</loc>
       
       <lastmod>2016-08-30T00:00:00+00:00</lastmod>
+      
+      
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/2016/dispatcherservlet/</loc>
+      
+      <lastmod>2016-08-24T00:00:00+00:00</lastmod>
       
       
       
@@ -143,7 +343,55 @@
     </url>
   
     <url>
+      <loc>http://vonzhou.com/tags/cas/</loc>
+      
+      <lastmod>2018-12-01T00:00:00+00:00</lastmod>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
       <loc>http://vonzhou.com/categories/</loc>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/tags/disruptor/</loc>
+      
+      <lastmod>2018-12-01T00:00:00+00:00</lastmod>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/tags/fullgc/</loc>
+      
+      <lastmod>2019-03-01T00:00:00+00:00</lastmod>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/tags/gc/</loc>
+      
+      <lastmod>2019-02-21T00:00:00+00:00</lastmod>
       
       
       
@@ -165,9 +413,33 @@
     </url>
   
     <url>
-      <loc>http://vonzhou.com/categories/java/</loc>
+      <loc>http://vonzhou.com/tags/jdk%E6%BA%90%E7%A0%81/</loc>
       
-      <lastmod>2019-03-20T00:00:00+00:00</lastmod>
+      <lastmod>2018-12-19T00:00:00+00:00</lastmod>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/tags/json/</loc>
+      
+      <lastmod>2018-10-10T00:00:00+00:00</lastmod>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/tags/jvm/</loc>
+      
+      <lastmod>2019-02-21T00:00:00+00:00</lastmod>
       
       
       
@@ -189,7 +461,43 @@
     </url>
   
     <url>
-      <loc>http://vonzhou.com/categories/linux/</loc>
+      <loc>http://vonzhou.com/categories/java/</loc>
+      
+      <lastmod>2019-03-20T00:00:00+00:00</lastmod>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/tags/kafka/</loc>
+      
+      <lastmod>2019-03-01T00:00:00+00:00</lastmod>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/categories/kafka/</loc>
+      
+      <lastmod>2019-03-01T00:00:00+00:00</lastmod>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/tags/linux/</loc>
       
       <lastmod>2018-08-31T00:00:00+00:00</lastmod>
       
@@ -201,7 +509,7 @@
     </url>
   
     <url>
-      <loc>http://vonzhou.com/tags/linux/</loc>
+      <loc>http://vonzhou.com/categories/linux/</loc>
       
       <lastmod>2018-08-31T00:00:00+00:00</lastmod>
       
@@ -225,9 +533,9 @@
     </url>
   
     <url>
-      <loc>http://vonzhou.com/categories/redis/</loc>
+      <loc>http://vonzhou.com/tags/redis/</loc>
       
-      <lastmod>2018-09-09T00:00:00+00:00</lastmod>
+      <lastmod>2018-12-14T00:00:00+00:00</lastmod>
       
       
       
@@ -237,9 +545,9 @@
     </url>
   
     <url>
-      <loc>http://vonzhou.com/tags/redis/</loc>
+      <loc>http://vonzhou.com/categories/redis/</loc>
       
-      <lastmod>2018-12-14T00:00:00+00:00</lastmod>
+      <lastmod>2018-09-09T00:00:00+00:00</lastmod>
       
       
       
@@ -261,9 +569,21 @@
     </url>
   
     <url>
-      <loc>http://vonzhou.com/categories/spring/</loc>
+      <loc>http://vonzhou.com/tags/scala/</loc>
       
-      <lastmod>2019-02-27T00:00:00+00:00</lastmod>
+      <lastmod>2018-11-07T00:00:00+00:00</lastmod>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/tags/servlet/</loc>
+      
+      <lastmod>2016-08-24T00:00:00+00:00</lastmod>
       
       
       
@@ -285,9 +605,81 @@
     </url>
   
     <url>
+      <loc>http://vonzhou.com/categories/spring/</loc>
+      
+      <lastmod>2019-02-27T00:00:00+00:00</lastmod>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/tags/spring-mvc/</loc>
+      
+      <lastmod>2016-08-24T00:00:00+00:00</lastmod>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/tags/springboot/</loc>
+      
+      <lastmod>2018-10-10T00:00:00+00:00</lastmod>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/categories/springboot/</loc>
+      
+      <lastmod>2018-09-18T00:00:00+00:00</lastmod>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/categories/springcloud/</loc>
+      
+      <lastmod>2018-10-10T00:00:00+00:00</lastmod>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
       <loc>http://vonzhou.com/tags/</loc>
       
-      <lastmod>2019-03-14T00:00:00+00:00</lastmod>
+      <lastmod>2018-12-01T00:00:00+00:00</lastmod>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/tags/zuul/</loc>
+      
+      <lastmod>2018-10-10T00:00:00+00:00</lastmod>
       
       
       
@@ -309,9 +701,57 @@
     </url>
   
     <url>
+      <loc>http://vonzhou.com/tags/%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F/</loc>
+      
+      <lastmod>2016-09-02T00:00:00+00:00</lastmod>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/</loc>
+      
+      <lastmod>2018-09-07T00:00:00+00:00</lastmod>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
       <loc>http://vonzhou.com/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/</loc>
       
       <lastmod>2019-03-14T00:00:00+00:00</lastmod>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/tags/%E5%AD%97%E8%8A%82%E7%A0%81/</loc>
+      
+      <lastmod>2018-11-27T00:00:00+00:00</lastmod>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/tags/%E5%B9%82%E7%AD%89/</loc>
+      
+      <lastmod>2019-01-30T00:00:00+00:00</lastmod>
       
       
       
@@ -345,6 +785,18 @@
     </url>
   
     <url>
+      <loc>http://vonzhou.com/tags/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/</loc>
+      
+      <lastmod>2016-08-30T00:00:00+00:00</lastmod>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
       <loc>http://vonzhou.com/categories/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/</loc>
       
       <lastmod>2016-08-30T00:00:00+00:00</lastmod>
@@ -357,9 +809,21 @@
     </url>
   
     <url>
-      <loc>http://vonzhou.com/tags/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/</loc>
+      <loc>http://vonzhou.com/tags/%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8/</loc>
       
-      <lastmod>2016-08-30T00:00:00+00:00</lastmod>
+      <lastmod>2018-11-11T00:00:00+00:00</lastmod>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://vonzhou.com/tags/%E7%BC%93%E5%AD%98/</loc>
+      
+      <lastmod>2018-12-19T00:00:00+00:00</lastmod>
       
       
       
@@ -405,6 +869,18 @@
     </url>
   
     <url>
+      <loc>http://vonzhou.com/tags/%E8%AF%BB%E4%B9%A6/</loc>
+      
+      <lastmod>2018-12-16T00:00:00+00:00</lastmod>
+      
+      
+      
+      <priority>0</priority>
+      
+      
+    </url>
+  
+    <url>
       <loc>http://vonzhou.com/categories/%E8%AF%BB%E4%B9%A6/</loc>
       
       <lastmod>2018-12-16T00:00:00+00:00</lastmod>
@@ -417,9 +893,9 @@
     </url>
   
     <url>
-      <loc>http://vonzhou.com/tags/%E8%AF%BB%E4%B9%A6/</loc>
+      <loc>http://vonzhou.com/tags/%E9%9B%86%E5%90%88/</loc>
       
-      <lastmod>2018-12-16T00:00:00+00:00</lastmod>
+      <lastmod>2018-12-01T00:00:00+00:00</lastmod>
       
       
       

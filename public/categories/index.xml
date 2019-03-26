@@ -20,6 +20,15 @@
     </item>
     
     <item>
+      <title>Kafka</title>
+      <link>http://vonzhou.com/categories/kafka/</link>
+      <pubDate>Fri, 01 Mar 2019 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/categories/kafka/</guid>
+      <description></description>
+    </item>
+    
+    <item>
       <title>Linux</title>
       <link>http://vonzhou.com/categories/linux/</link>
       <pubDate>Fri, 31 Aug 2018 00:00:00 +0000</pubDate>
@@ -43,6 +52,24 @@
       <pubDate>Wed, 27 Feb 2019 00:00:00 +0000</pubDate>
       
       <guid>http://vonzhou.com/categories/spring/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>SpringBoot</title>
+      <link>http://vonzhou.com/categories/springboot/</link>
+      <pubDate>Tue, 18 Sep 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/categories/springboot/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>SpringCloud</title>
+      <link>http://vonzhou.com/categories/springcloud/</link>
+      <pubDate>Wed, 10 Oct 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/categories/springcloud/</guid>
       <description></description>
     </item>
     

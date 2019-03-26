@@ -27,10 +27,10 @@ Switch表达式 模式匹配（Patrern Matching） 上述“计算字符个数�
     
     <item>
       <title>波兰来客</title>
-      <link>http://vonzhou.com/2019/%E6%B3%A2%E5%85%B0%E6%9D%A5%E5%AE%A2/</link>
+      <link>http://vonzhou.com/2019/bo-lan-lai-ke/</link>
       <pubDate>Fri, 15 Mar 2019 11:03:31 +0800</pubDate>
       
-      <guid>http://vonzhou.com/2019/%E6%B3%A2%E5%85%B0%E6%9D%A5%E5%AE%A2/</guid>
+      <guid>http://vonzhou.com/2019/bo-lan-lai-ke/</guid>
       <description>很喜欢这首诗。
 波兰来客 —北岛 那时我们有梦， 关于文学， 关于爱情， 关于穿越世界的旅行。 如今我们深夜饮酒， 杯子碰到一起， 都是梦破碎的声音。  </description>
     </item>
@@ -51,12 +51,51 @@ public Table getTable() throws Exception { Table table = tableThreadLocal.get();
     </item>
     
     <item>
+      <title>记一次使用KafkaProducer引发的Full GC问题</title>
+      <link>http://vonzhou.com/2019/kafka-producer-fullgc-story/</link>
+      <pubDate>Fri, 01 Mar 2019 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2019/kafka-producer-fullgc-story/</guid>
+      <description> 场景 一个模块接收数据，然后投到Kafka中，实现削峰填谷。突然有一天频繁出现Full GC问题。
+初步尝试 查看JVM的配置，发现最大堆配置的太小，推测：堆内存不足，导致频繁gc，内存不足，导致往kafka发送消息的时候阻塞，所以线程都会卡住。
+15302 com.xxxx.AppRunner -Dlog.dir=/path/to/logs -Xms1024m -Xmx1024m -XX:MaxPermSize=256m -verbose:gc -XX:+PrintGCDetails  调整堆大小配置后，Full GC 问题并没有得到缓解。
+MAT分析 heap dump出现使用MAT分析。
+这里的大对象都是我们发送的批量消息对象，推测：是不是batch.size设置的过大？（设置的是40MB）
+解决方法 调小batch.size，设置为20MB：
+props.put(&amp;quot;buffer.memory&amp;quot;, 100 * 1024 * 1024); // 批量发送的字节大小， 20MB props.put(&amp;quot;batch.size&amp;quot;, 2 * 10 * 1024 * 1024);  最终问题得以解决，连Minor GC也很少了：
+KafkaProducer消息发送过程 KafkaProducer发送消息的过程是：消息追加到一个内部的队列中，有一个异步线程负责从中取出，将消息发送给Broker。
+在了解kafka消息发送过程的基础上，通过MAT大对象图还可以看到：
+ buffer.memory配置的是客户端发送消息时BufferPool的内存大小，至少要比batch.size大，否则连一个RecordBatch也放不进去。 实际占用的内存可能是buffer.memory的好几倍（4~5倍？），流转多个环节，底层存储都是ByteBuffer  </description>
+    </item>
+    
+    <item>
       <title>BeanUtils.copyProperties 源码分析</title>
       <link>http://vonzhou.com/2019/spring-beanutils-copyproperties/</link>
       <pubDate>Wed, 27 Feb 2019 00:00:00 +0000</pubDate>
       
       <guid>http://vonzhou.com/2019/spring-beanutils-copyproperties/</guid>
       <description>概述  利用反射 字段不一致也不会报错，因为会根据目标对象的属性去源对象中找对应的属性描述符，存在才拷贝 相同字段，类型不同，也不会有问题，因为拷贝之时会判断该字段源对象的读方法返回值，是否可应用用目标对象的写方法参数  实例 public class CopyPropertiesDemo { public static void main(String[] args) { Student s = new Student(); s.setName(&amp;quot;vz&amp;quot;); s.setFoo(1024); s.setBar(-1); Father f = new Father(); BeanUtils.copyProperties(s, f); System.out.println(f); } static class Student{ private String name; private int foo; private int bar; // setters and getters } static class Father{ private String name; private int age; private int salary; private double foo; private Integer bar; // setters and getters @Override public String toString() { return &amp;quot;Father{&amp;quot; + &amp;quot;name=&#39;&amp;quot; + name + &#39;\&#39;&#39; + &amp;quot;, age=&amp;quot; + age + &amp;quot;, salary=&amp;quot; + salary + &amp;quot;, foo=&amp;quot; + foo + &amp;quot;, bar=&amp;quot; + bar + &#39;}&#39;; } } }  输出：</description>
+    </item>
+    
+    <item>
+      <title>JVM垃圾回收总结</title>
+      <link>http://vonzhou.com/2019/jvm-gc-summary/</link>
+      <pubDate>Thu, 21 Feb 2019 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2019/jvm-gc-summary/</guid>
+      <description>1. 垃圾回收算法 Mark-Sweep(标记-清除)算法 复制算法 Mark-Compact(标记-整理)算法 分代收集算法 2. 垃圾收集器 新生代  Serial
+ ParNew
+  ParNew是Serial的多线程版本， 只有 Serial，ParNew能和CMS配合使用。ParNew是使用CMS后的默认新生代收集器，可以使用-XX:+UseParNewGC强制指定。
+ Parallel Scavenge  Parallel Scavenge收集器，吞吐量优先，通过参数可以控制最大垃圾收集的停顿时间（-XX:MaxGCPauseMills）及直接设置吞吐量大小（-XX:GCTimeRatio）。也可以开启GC自适应调节策略（GC Ergonomics）。
+使用XX:+UseParallelGC开启，JDK1.4.1引入。PS只能和Serial Old，ParOld搭配使用。
+Java 6，7，8 默认的收集器是Parallel GC（PS + Parallel Old），使用PrintFlagsFinal可以看到：
+$ ./bin/java -XX:+PrintFlagsFinal bool UseParallelGC := true {product} bool UseParallelOldGC = true {product}  老年代  Serial Old
+ Parallel Old
+  Parallel Old收集器是PS的老年代版本，使用多线程和“标记-整理”。
+XX:+UseParallelOldGC开启后，也会自动设置XX:+UseParallelGC，JDK5.0 update 6引入。
+ CMS  CMS收集器，以最短回收停顿时间，服务响应速度为目标，采用标记-清除算法。使用-XX:+UseConcMarkSweepGC开启。
+G1收集器 JDK7引入的
+G1收集器的Region，其他收集器新生代和老年代之间的对象引用，JVM都是使用Remembered Set来避免全堆扫描。</description>
     </item>
     
     <item>
@@ -71,6 +110,32 @@ public Table getTable() throws Exception { Table table = tableThreadLocal.get();
 public class Singleton1 { public static final Singleton1 INSTANCE = new Singleton1(); private Singleton1() { } }  法2：静态工厂 和法1一样，只不过通过工厂方法来返回实例，在API设计上更可取。
 public class Singleton2 { private static final Singleton2 INSTANCE = new Singleton2(); private Singleton2() { } public static Singleton2 getInstance() { return INSTANCE; } }  法3：lazy initialization 延迟初始化 前面法1，法2是饿汉式，lazy initialization 是懒汉式，需要的时候实例化，另外 double check。
 public class Singleton3 { private static Singleton3 INSTANCE = null; private Singleton3() { } public static Singleton3 getInstance() { if (INSTANCE == null) { synchronized (Singleton3.</description>
+    </item>
+    
+    <item>
+      <title>大面积offset commit失败，导致不停Rebalance，大量消息重复消费的问题</title>
+      <link>http://vonzhou.com/2019/kafka-consumer-rebalance-jitter/</link>
+      <pubDate>Wed, 30 Jan 2019 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2019/kafka-consumer-rebalance-jitter/</guid>
+      <description>场景 使用spring-kafka，Listener方法中把收到的消息投递到Disruptor队列中，然后Disruptor单Consumer把消息插入到DB中。
+采用的手动ACK。
+严重问题的出现 新版本发布之时，接到大量的报警异常，Consumer不停的进行Rebalance，不停的进行分区重分配，offset提交失败。
+2019-01-29 23:59:24 [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-kafka-consumer-1] ERROR o.a.k.c.c.i.ConsumerCoordinator.handle 550 - Error UNKNOWN_MEMBER_ID occurred while committing offsets for group xxxxx_group 2019-01-29 23:59:24 [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-kafka-consumer-1] ERROR o.a.k.c.c.i.ConsumerCoordinator.onJoinPrepare 254 - User provided listener org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer$1 failed on partition revocation: org.apache.kafka.clients.consumer.CommitFailedException: Commit cannot be completed due to group rebalance at org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$OffsetCommitResponseHandler.handle(ConsumerCoordinator.java:552) at org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$OffsetCommitResponseHandler.handle(ConsumerCoordinator.java:493) at org.apache.kafka.clients.consumer.internals.AbstractCoordinator$CoordinatorResponseHandler.onSuccess(AbstractCoordinator.java:665) at org.apache.kafka.clients.consumer.internals.AbstractCoordinator$CoordinatorResponseHandler.onSuccess(AbstractCoordinator.java:644) at org.apache.kafka.clients.consumer.internals.RequestFuture$1.onSuccess(RequestFuture.java:167) at org.apache.kafka.clients.consumer.internals.RequestFuture.fireSuccess(RequestFuture.java:133) at org.apache.kafka.clients.consumer.internals.RequestFuture.complete(RequestFuture.java:107) at org.apache.kafka.clients.consumer.internals.ConsumerNetworkClient$RequestFutureCompletionHandler.onComplete(ConsumerNetworkClient.java:380) at org.apache.kafka.clients.NetworkClient.poll(NetworkClient.java:274) at org.apache.kafka.clients.consumer.internals.ConsumerNetworkClient.clientPoll(ConsumerNetworkClient.java:320) at org.apache.kafka.clients.consumer.internals.ConsumerNetworkClient.poll(ConsumerNetworkClient.java:213) at org.apache.kafka.clients.consumer.internals.ConsumerNetworkClient.poll(ConsumerNetworkClient.java:193) at org.</description>
+    </item>
+    
+    <item>
+      <title>IntegerCache源码阅读</title>
+      <link>http://vonzhou.com/2018/integercache/</link>
+      <pubDate>Wed, 19 Dec 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2018/integercache/</guid>
+      <description>先从一个思考题开始，考虑下面的代码输出是什么？
+*例1*：
+public static void test1() { Integer a = 1; // 等价于 Integer a = valueOf(1) Integer b = 1; System.out.println(a == b); Integer c = 128; Integer d = 128; System.out.println(c == d); System.out.println(c.equals(d)); }  输出：
+true false true  把整数常量赋值给整数包装类型，实际上调用了Integer.valueOf方法，通过指令可以看到：
+public static Integer valueOf(int i) { if (i &amp;gt;= IntegerCache.low &amp;amp;&amp;amp; i &amp;lt;= IntegerCache.high) return IntegerCache.cache[i + (-IntegerCache.low)]; return new Integer(i); }  初次访问IntegerCache类，会触发其初始化。
+private static class IntegerCache { static final int low = -128; static final int high; static final Integer cache[]; static { // high value may be configured by property int h = 127; String integerCacheHighPropValue = sun.</description>
     </item>
     
     <item>
@@ -97,6 +162,145 @@ public class Singleton3 { private static Singleton3 INSTANCE = null; private Sin
     </item>
     
     <item>
+      <title>ArrayBlockingQueue与Disruptor的性能对比</title>
+      <link>http://vonzhou.com/2018/disruptor-vs-arrayblockingqueue/</link>
+      <pubDate>Sat, 01 Dec 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2018/disruptor-vs-arrayblockingqueue/</guid>
+      <description>虽然Disruptor采用了lock-free的算法，但并非银弹，本文以最常用的场景来测试ArrayBlockingQueue和Disruptor的作为缓存队列的性能优劣。
+测试环境  消息大小 20B Windows 10, 4内核，8逻辑CPU JDK 8  测试用例 本文采用一个生产者来生产特定数量的消息，然后使用缓冲队列，由特定数量的消费者来共同消费处理这批消息。
+每条消息处理耗时20ms的情况 ， 4消费线程：
+   方式 1K 1W 10W     ABQ 5s 52s 525s   Disruptor 5s 52s 529s    每条消息处理耗时20ms的情况 ， 8消费线程：
+   方式 1K 1W 10W     ABQ 2s 26s 263s   Disruptor 2s 26s 263s    从中可以看到，平均下来5ms一条消息（每条消息耗时20ms，4个线程）。如果一条消息处理的时间比较长，则使用普通ABQ，Disruptor开销差别不大，因为大头时间在消息的处理上，锁争用的开销不明显。
+每条消息处理耗时20ms的情况 ， 4消费线程：</description>
+    </item>
+    
+    <item>
+      <title>Java字节码工具AsmTools介绍</title>
+      <link>http://vonzhou.com/2018/asmtools-intro/</link>
+      <pubDate>Tue, 27 Nov 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2018/asmtools-intro/</guid>
+      <description>AsmTools是一款字节码生成工具。 包括的组件：
+ jasm：由JASM格式得到class文件 jdis：把class文件转为JASM格式 jcoder：由JCOD格式得到class文件 jdec：把class文件转为JCOD格式  两种汇编器/反汇编器（assembler/disassemblers）对应的格式有啥区别？
+ JASM specifically focuses on representing byte-code instructions in the VM format (while providing minimal description of the structure of the rest of the class file). Generally, JASM is more convenient for semantic changes, like change to instruction flow.
+JCOD provides good support for describing the structure of a class file (as well as writing incorrect bytes outside of this structure), and provides no support for specifying byte-code instructions (simply raw bytes for instructions).</description>
+    </item>
+    
+    <item>
+      <title>深入理解条件变量 Condition</title>
+      <link>http://vonzhou.com/2018/java-condition/</link>
+      <pubDate>Sun, 11 Nov 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2018/java-condition/</guid>
+      <description>序 可重入锁（ReentrantLock）是 synchronized 关键字的扩展，更加灵活。还有一种ReentrantLock应用场景是和Condition搭配使用，实现多线程环境下等待状态条件的功能。Object.wait 和 Object.notify 是和 synchronized 配合使用的，条件变量Condition是和ReentrantLock相关联的。
+接下来先通过一个Demo看看Condition的用法，然后列举两个应用的地方，最后分析其源码实现。
+一个简单Demo 先通过一个Demo看看怎么使用Condition，主线程通知条件满足，通过另一个线程继续运行，可以看到的是Condition.wait/signal方法需要和一个ReentrantLock绑定。
+public class ReenterLockCondition implements Runnable { public static ReentrantLock lock = new ReentrantLock(); public static Condition condition = lock.newCondition(); @Override public void run() { try { lock.lock(); condition.await(); System.out.println(String.format(&amp;quot;条件满足，线程%s运行！&amp;quot;, Thread.currentThread().getName())); } catch (InterruptedException e) { e.printStackTrace(); } finally { lock.unlock(); } } public static void main(String args[]) throws InterruptedException { ReenterLockCondition reenterLockCondition = new ReenterLockCondition(); Thread thread1 = new Thread(reenterLockCondition); thread1.</description>
+    </item>
+    
+    <item>
+      <title>Kafka源码阅读环境搭建</title>
+      <link>http://vonzhou.com/2018/kafka-source-begin/</link>
+      <pubDate>Wed, 07 Nov 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2018/kafka-source-begin/</guid>
+      <description>记录Kafka源码阅读环境的搭建过程。
+序 在大数据系统中Kafka应用广泛，借助源码阅读可以加深对组件的理解，同时可以拾起Scala语言。
+安装依赖软件  JDK Scala Gradle  构建IDEA工程 在源码目录下运行 gradle idea。
+遇到的问题：
+* What went wrong: A problem occurred evaluating root project &#39;kafka-0.10.0.1-src&#39;. &amp;gt; Failed to apply plugin [class &#39;org.gradle.api.plugins.scala.ScalaBasePlugin&#39;] &amp;gt; No such property: useAnt for class: org.gradle.api.tasks.scala.ScalaCompileOptions  需要在build.gradle开头加入：
+ScalaCompileOptions.metaClass.daemonServer = true ScalaCompileOptions.metaClass.fork = true ScalaCompileOptions.metaClass.useAnt = false ScalaCompileOptions.metaClass.useCompileDaemon = false  然后构建完成。
+打开工程 然后用IDEA打开工程，kafka server的启动类是 kafka.Kafka，启动时需要指定配置文件 config/server.properties。
+这里我修改了日志路径和ZK的地址。
+log.dirs=D:\\dev\\kafka-logs zookeeper.connect=ubuntu:2181  配置启动选项，指定server.properties配置文件。
+运行后可以看到kafka成功启动的日志：
+[2018-11-07 14:17:20,673] INFO Initiating client connection, connectString=ubuntu:2181 sessionTimeout=6000 watcher=org.</description>
+    </item>
+    
+    <item>
+      <title>解决Zuul无法同时转发Multipart和JSON请求的问题</title>
+      <link>http://vonzhou.com/2018/zuul-forward-multipart-and-json/</link>
+      <pubDate>Wed, 10 Oct 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2018/zuul-forward-multipart-and-json/</guid>
+      <description>扩展 RibbonRoutingFilter，修改默认的转发逻辑，支持转发Multipart和JSON类型请求。
+场景 系统中有一个采用 Netflix Zuul 实现的网关模块，负责统一的鉴权，然后把请求转到对应的后端模块。基本的配置后，只需要实现一个Filter就可以了。
+@Slf4j @Component public class AccessTokenFilter extends ZuulFilter { // Filter 的类型，在路由之前 @Override public String filterType() { return &amp;quot;pre&amp;quot;; } // 比系统的优先级要低些 @Override public int filterOrder() { return 7; } @Override public Object run() { RequestContext requestContext = RequestContext.getCurrentContext(); HttpServletRequest request = requestContext.getRequest(); HttpServletResponse response = requestContext.getResponse(); String token = CookieUtils.getCookieValue(&amp;quot;token&amp;quot;, request); log.info(&amp;quot;token={}&amp;quot;, token); token = URLDecoder.decode(token, &amp;quot;UTF-8&amp;quot;); // 验证 token boolean valid = validateToken(token); // 验证不通过则直接响应 if(!</description>
+    </item>
+    
+    <item>
+      <title>Disruptor中的事件消费模式</title>
+      <link>http://vonzhou.com/2018/disruptor-consume-pattern/</link>
+      <pubDate>Fri, 28 Sep 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2018/disruptor-consume-pattern/</guid>
+      <description>Disruptor中有两种事件消费模式，多播（Multicast）:每个消费者都处理相同的消息，WorkPool：多个消费者合作消费一批消息。
+在《Disruptor快速入门》中，我们在构造 Disruptor 的时候，明确指定了单生产者模式，那么消费者呢？有几个消费者线程来处理消息？每个事件会被处理几次？
+当我们调用 disruptor.handleEventsWith 设置消息的处理器时，我们提供的 Event Handler 会被包装为 BatchEventProcessor。
+public EventHandlerGroup&amp;lt;T&amp;gt; handleEventsWith(final EventHandler&amp;lt;? super T&amp;gt;... handlers) { return createEventProcessors(new Sequence[0], handlers); } EventHandlerGroup&amp;lt;T&amp;gt; createEventProcessors( final Sequence[] barrierSequences, final EventHandler&amp;lt;? super T&amp;gt;[] eventHandlers) { checkNotStarted(); final Sequence[] processorSequences = new Sequence[eventHandlers.length]; final SequenceBarrier barrier = ringBuffer.newBarrier(barrierSequences); for (int i = 0, eventHandlersLength = eventHandlers.length; i &amp;lt; eventHandlersLength; i++) { final EventHandler&amp;lt;? super T&amp;gt; eventHandler = eventHandlers[i]; // 这里 final BatchEventProcessor&amp;lt;T&amp;gt; batchEventProcessor = new BatchEventProcessor&amp;lt;T&amp;gt;(ringBuffer, barrier, eventHandler); if (exceptionHandler !</description>
+    </item>
+    
+    <item>
+      <title>Disruptor 快速入门</title>
+      <link>http://vonzhou.com/2018/disruptor-get-started/</link>
+      <pubDate>Fri, 21 Sep 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2018/disruptor-get-started/</guid>
+      <description>为了提高系统的吞吐量，通常会采用队列来实现批量处理，发布订阅模式，异步等场景。在JDK的内置队列中，一般实际中会使用ArrayBlockingQueue，一方面是有界的，另一方面是通过加锁实现的线程安全，比如在使用线程池的时候最佳实践就是指定了一个 ArrayBlockingQueue 作为任务队列。
+ExecutorService service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue&amp;lt;Runnable&amp;gt;(CAPACITY), new RejectedExecutionHandler() { @Override public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) { // 实现自己的拒绝策略 } });  LMAX公司开发的 Disruptor 通过无锁（CAS），避免缓存行伪共享，环形数组（RingBuffer）实现了更高的性能，Storm，Log4j2中都使用了 Disruptor。
+本文是 Disruptor 快速入门篇。
+引入依赖 依赖配置。
+&amp;lt;dependency&amp;gt; &amp;lt;groupId&amp;gt;com.lmax&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;disruptor&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;3.3.7&amp;lt;/version&amp;gt; &amp;lt;/dependency&amp;gt;  定义事件，事件工厂 定义一个简单的事件，这里假设要处理的是日志消息。
+@Data public class LogEvent { private String msg; } public class LogEventFactory implements EventFactory&amp;lt;LogEvent&amp;gt; { @Override public LogEvent newInstance() { return new LogEvent(); } }  事件工厂用于 Disruptor 在 RingBuffer 中预分配空间，从 RingBuffer 的源码可以看到这一点。</description>
+    </item>
+    
+    <item>
+      <title>CAS 的底层实现</title>
+      <link>http://vonzhou.com/2018/cas/</link>
+      <pubDate>Wed, 19 Sep 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2018/cas/</guid>
+      <description>java.util.concurrent 包的很多类（如 Semaphore，ConcurrentLinkedQueue）都提供了比 sychronized 机制更高的性能和可伸缩性，源于JDK 1.5提供的原子变量（如AtomicInteger,AtomicReference），这些原子变量类可以构建高效的非阻塞算法，底层实现是CAS。
+CAS（compare and swap）是一种高效实现线程安全性的方法，支持原子更新操作，适用于实现计数器，序列发生器等场景，比如在线程池新增worker线程的时候，需要增加计数，因为i++并非一个原子操作，所以可以使用 AtomicInteger 实现安全加1的操作。
+// java.util.concurrent.ThreadPoolExecutor /** * Attempts to CAS-increment the workerCount field of ctl. */ private boolean compareAndIncrementWorkerCount(int expect) { return ctl.compareAndSet(expect, expect + 1); }  CAS和传统的加锁方式（sychronized, ReentrantLock等）相比，CAS是一种乐观方式（对比数据库的悲观、乐观锁），无锁（lock-free），争用失败的线程不会被阻塞挂起，CAS失败时由我们决定是继续尝试，还是执行其他操作。当然这里的无锁只是上层我们感知的无锁，其实底层仍然是有加锁行为的，后面会看到。
+此外，CAS存在ABA问题，可以看下 AtomicStampedReference ，内部封装的是[reference, integer]。
+接下来跟踪下源码。
+CAS底层实现 从 AtomicInteger 入手，其中的属性 valueOffset 是该对象的 value 在内存中的起始地址。
+public final boolean compareAndSet(int expect, int update) { return unsafe.compareAndSwapInt(this, valueOffset, expect, update); } // setup to use Unsafe.</description>
+    </item>
+    
+    <item>
+      <title>Spring Boot 执行初始化逻辑的方法</title>
+      <link>http://vonzhou.com/2018/spring-boot-init-methods/</link>
+      <pubDate>Tue, 18 Sep 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2018/spring-boot-init-methods/</guid>
+      <description>在 Spring Boot 启动后执行一些初始化的逻辑有哪些方法？它们的执行顺序是怎样的？
+序 在 Spring Boot 启动后执行一些初始化的逻辑应该是一个很常见的场景，这里总结下几种方法，及执行的顺序。
+init-method 给bean配置init-method属性，或者在xml配置文件中指定，或者指定注解 Bean 的 initMethod 属性。
+InitializingBean 实现 InitializingBean 接口。
+使用 PostConstruct 注解 在初始化方法上加 PostConstruct 注解。
+Spring Boot 中的 ApplicationRunner/CommandLineRunner 实现 ApplicationRunner 或 CommandLineRunner 接口。
+运行效果 我们的基本类：
+public class Foo implements InitializingBean, CommandLineRunner, ApplicationRunner { public void init() { System.out.println(&amp;quot;init method ...&amp;quot;); } @PostConstruct public void postConstruct() { System.out.println(&amp;quot;init by PostConstruct ...&amp;quot;); } @Override public void afterPropertiesSet() throws Exception { System.</description>
+    </item>
+    
+    <item>
+      <title>Kafka中的2种日志清理策略</title>
+      <link>http://vonzhou.com/2018/kafka-cleanup-policy/</link>
+      <pubDate>Fri, 14 Sep 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2018/kafka-cleanup-policy/</guid>
+      <description>初体验Kafka中的两种日志清理策略：log compaction和delete。
+序 Kafka是一个基于日志的流处理平台，一个topic可以有多个分区（partition），分区是复制的基本单元，在单节点上，一个分区的数据文件可以存储在多个磁盘目录中，配置项是：
+# A comma separated list of directories under which to store log files log.dirs=/home/storm/dev/kafka-logs  每个分区的日志文件存储的时候又会分成一个个的segment，默认日志段（segment）的大小是1GB，segment是日志清理的基本单元，当前正在使用的segment是不会被清理的。
+# The maximum size of a log segment file. When this size is reached a new log segment will be created. log.segment.bytes=1073741824  日志清理 Kafka Broker 的日志清理功能在配置 log.cleaner.enable=true 后会开启一些清理线程，执行定时清理任务。在kafka 0.9.0之后 log.cleaner.enable 默认是true。 支持的清理策略（log.cleanup.policy）有2种：delete和compact，默认是delete。
+compact 清理策略（log compaction） log compaction 实现的是一个topic的一个分区中，只保留最近的某个key对应的value，如果要删除某个消息可以发送一个墓碑消息（tomestone）：(key, null)。为了展示这个过程，修改 Broker 的配置：把segment的大小调小点，清理策略改为 compact。
+# 25KB log.segment.bytes=25600 log.cleanup.policy=compact  批量发送一些带有key的消息。</description>
+    </item>
+    
+    <item>
       <title>Redis中键的过期删除策略</title>
       <link>http://vonzhou.com/2018/redis-expire/</link>
       <pubDate>Sun, 09 Sep 2018 00:00:00 +0000</pubDate>
@@ -108,6 +312,33 @@ public class Singleton3 { private static Singleton3 INSTANCE = null; private Sin
     </item>
     
     <item>
+      <title>如何保证ArrayList在多线程环境下的线程安全性</title>
+      <link>http://vonzhou.com/2018/make-arraylist-thread-safe/</link>
+      <pubDate>Fri, 07 Sep 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2018/make-arraylist-thread-safe/</guid>
+      <description>如果想在多线程环境下使用ArrayList，如果保障其线程安全性？
+序 在《记一次 ArrayList 线程安全问题》一文中说明了ArrayList用在多线程环境中存在问题。关键的原因就是ArrayList底层实现新增元素时数组索引的移动操作。
+/** * Appends the specified element to the end of this list. * * @param e element to be appended to this list * @return &amp;lt;tt&amp;gt;true&amp;lt;/tt&amp;gt; (as specified by {@link Collection#add}) */ public boolean add(E e) { ensureCapacityInternal(size + 1); // Increments modCount!! elementData[size++] = e; return true; }  非线程安全场景展示：
+public static void notThreadSafe() throws Exception { final List&amp;lt;Integer&amp;gt; list = Lists.newArrayList(); for (int i = 0; i &amp;lt; 4; i++) { new Thread(new Runnable() { @Override public void run() { for (int j = 0; j &amp;lt; 10000; j++) { list.</description>
+    </item>
+    
+    <item>
+      <title>如何加快 Spring Boot 项目的启动速度？</title>
+      <link>http://vonzhou.com/2018/spring-boot-speedup/</link>
+      <pubDate>Tue, 04 Sep 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2018/spring-boot-speedup/</guid>
+      <description>可以通过避免包扫描和自动配置来加快Spring Boot项目的启动速度。
+序 一个agent部署在其他机器上，其能够接收提交的Jar包进行部署，但是我们无法登陆机器也无法更新agent的代码。agent中有个逻辑是部署jar包的时候会等待10s，然后判断是否启动成功，如果没有启动成功，则进行回滚，这样就导致了一个问题：要部署的jar启动时间超过了10s，然后就回滚，无法部署成功。最终的解决方法只能是加快 Spring Boot 的启动速度了，经过调整后，到达了想要的结果。
+我们知道在基于 Spring Boot 的项目中，主类一般会加上注解 @SpringBootApplication，@SpringBootApplication 其实就是开启了包扫描和自动注解特性。
+@Target(ElementType.TYPE) @Retention(RetentionPolicy.RUNTIME) @Documented @Inherited @SpringBootConfiguration @EnableAutoConfiguration @ComponentScan(excludeFilters = @Filter(type = FilterType.CUSTOM, classes = TypeExcludeFilter.class)) public @interface SpringBootApplication { //................ }  问题的关键是 ComponentScan 和 EnableAutoConfiguration 是非常耗时的。@ComponentScan 是扫描指定包下面的注解标记，从而生成相应的 Bean，@EnableAutoConfiguration 可以根据引入的jar包，自动配置一些 Bean，但是并非都是需要的。
+避免包扫描（ComponentScan） 不使用 @SpringBootApplication 注解引入的 ComponentScan，改为自己配置项目中需要的Bean，启动类变为了：
+//@SpringBootApplication @Configuration @EnableAutoConfiguration public abstract class AppRunner { // ...... }  Bean 的实例化配置统一放到 BeanConfig.class中：
+@Configuration public class BeanConfig { @Autowired private SqlSessionFactory sqlSessionFactory; //.</description>
+    </item>
+    
+    <item>
       <title>Linux常用命令总结</title>
       <link>http://vonzhou.com/2018/linux-commands/</link>
       <pubDate>Fri, 31 Aug 2018 00:00:00 +0000</pubDate>
@@ -116,6 +347,17 @@ public class Singleton3 { private static Singleton3 INSTANCE = null; private Sin
       <description>列举平时常用但不易记住的Linux命令，工欲善其事，必先利其器，掌握了这些常用的工具命令就会在工作学习中得心应手。每掌握一个新的命令或者选项，可能你就会发现新的天地，加之不同命令的组合（管道）和重定向，必会受益匪浅。
 进程 Process top top 命令用于动态查看系统的进程信息。top的输出分为上部的综述信息及下部的任务列表信息。
 ➜ top top - 16:42:10 up 28 days, 1:33, 5 users, load average: 0.54, 0.83, 0.95 Tasks: 383 total, 1 running, 331 sleeping, 0 stopped, 0 zombie %Cpu(s): 3.1 us, 1.3 sy, 0.0 ni, 91.9 id, 3.6 wa, 0.0 hi, 0.2 si, 0.0 st KiB Mem : 16207712 total, 6220896 free, 8091128 used, 1895688 buff/cache KiB Swap: 16557052 total, 11717176 free, 4839876 used. 7169268 avail Mem PID USER PR NI VIRT RES SHR S %CPU %MEM TIME+ COMMAND 9807 storm 20 0 1240256 132344 39220 S 1.</description>
+    </item>
+    
+    <item>
+      <title>记一次 ArrayList 线程安全问题</title>
+      <link>http://vonzhou.com/2018/arraylist-thread-safe-problem/</link>
+      <pubDate>Thu, 12 Jul 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2018/arraylist-thread-safe-problem/</guid>
+      <description>记录一次因为考虑ArrayList线程安全欠周导致的NPE问题。
+在开发过程中遇到一个场景，要把记录数据根据时间分组到不同的区间（比如，周，月，季度），实现的思路是采用二分查找得到记录归属的分组，寻思采用并行流 效率会好点。
+场景 private List&amp;lt;List&amp;lt;Record&amp;gt;&amp;gt; arrangeByInsertTime(List&amp;lt;Record&amp;gt; list, long[] dayTs) { int size = dayTs.length; List&amp;lt;List&amp;lt;Record&amp;gt;&amp;gt; buckets = new ArrayList&amp;lt;&amp;gt;(size); for (int i = 0; i &amp;lt; size; i++) { buckets.add(Lists.newArrayList()); } if (CollectionUtils.isEmpty(list)) { return buckets; } list.parallelStream().forEach(r -&amp;gt; { int pos = Arrays.binarySearch(dayTs, r.getInsertTime()); if (pos &amp;gt;= 0) { buckets.get(pos).add(r); } else { pos = Math.abs(pos) - 2; if (pos &amp;gt;= 0 &amp;amp;&amp;amp; pos &amp;lt; dayTs.length) { buckets.</description>
     </item>
     
     <item>
@@ -182,6 +424,30 @@ public class Singleton3 { private static Singleton3 INSTANCE = null; private Sin
     </item>
     
     <item>
+      <title>Spring源码阅读 - bean实例化浅析</title>
+      <link>http://vonzhou.com/2016/spring-bean-instantiation/</link>
+      <pubDate>Fri, 02 Sep 2016 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2016/spring-bean-instantiation/</guid>
+      <description>继续！
+开始 承上，我们知道XmlBeanFactory继承自AbstractBeanFactory，AbstractBeanFactory实现了BeanFactory接口，完成根据bean的name获取对象的工作。doGetBean 代码很长，我们慢慢分析，不清楚的地方就debug一下，刚开始我们就着眼于最常见的情况，最简单的情况，复杂的情况只不过加了很多额外的控制判断。
+public Object getBean(String name) throws BeansException { return doGetBean(name, null, null, false); } protected &amp;lt;T&amp;gt; T doGetBean( final String name, final Class&amp;lt;T&amp;gt; requiredType, final Object[] args, boolean typeCheckOnly) throws BeansException { final String beanName = transformedBeanName(name); Object bean; // Eagerly check singleton cache for manually registered singletons. // 先检查单例的缓存有没有我们需要的对象实例 -- （1） Object sharedInstance = getSingleton(beanName); if (sharedInstance != null &amp;amp;&amp;amp; args == null) { if (logger.</description>
+    </item>
+    
+    <item>
+      <title>Spring源码阅读 - bean解析初体验</title>
+      <link>http://vonzhou.com/2016/spring-bean-parse/</link>
+      <pubDate>Thu, 01 Sep 2016 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2016/spring-bean-parse/</guid>
+      <description>从一个简单例子开始 通过一个简单的bean加载例子来热热身，虽然我们平时不使用这里的XmlBeanFactory,而是用ApplicationContext,但是后面我们看到二者还是有共通之处。
+public class Foo { public void execute(){ System.out.println(&amp;quot;Foo execute...&amp;quot;); } } public class TestFoo { @Test public void testExecute(){ BeanFactory factory = new XmlBeanFactory(new ClassPathResource(&amp;quot;service-context.xml&amp;quot;)); Foo bean = (Foo) factory.getBean(&amp;quot;foo&amp;quot;); bean.execute(); } }  配置文件：
+&amp;lt;beans xmlns=&amp;quot;http://www.springframework.org/schema/beans&amp;quot; xmlns:xsi=&amp;quot;http://www.w3.org/2001/XMLSchema-instance&amp;quot; xsi:schemaLocation=&amp;quot; http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd&amp;quot;&amp;gt; &amp;lt;bean id=&amp;quot;foo&amp;quot; class=&amp;quot;com.vonzhou.learn.spring.beanloading.Foo&amp;quot;/&amp;gt; &amp;lt;/beans&amp;gt;  从资源文件得到DOM对象 那么就开始吧！先看看XmlBeanFactory所处的地位。
+XmlBeanFactory扩展了DefaultListableBeanFactory，使用XmlBeanDefinitionReader从XML配置文件中读取bean的定义。忽略其他的细节，我们先来看看这个配置文件（是一种Resource）是如何被加载的。跟踪进去，进入XmlBeanDefinitionReader#loadBeanDefinitions方法，然后扑面而来的是下面这个重要的方法。
+public int loadBeanDefinitions(EncodedResource encodedResource) throws BeanDefinitionStoreException { Assert.notNull(encodedResource, &amp;quot;EncodedResource must not be null&amp;quot;); if (logger.isInfoEnabled()) { logger.info(&amp;quot;Loading XML bean definitions from &amp;quot; + encodedResource.</description>
+    </item>
+    
+    <item>
       <title>RocketMQ源码阅读 -  从消息发送到存储</title>
       <link>http://vonzhou.com/2016/rocketmq-from-msg-send-to-store/</link>
       <pubDate>Tue, 30 Aug 2016 00:00:00 +0000</pubDate>
@@ -200,6 +466,18 @@ RocketMQ 存储特点 RocketMQ的消息采用顺序写到commitlog文件，然�
 RocketMQ 刷盘实现 Broker 在消息的存取时直接操作的是内存（内存映射文件），这可以提供系统的吞吐量，但是无法避免机器掉电时数据丢失，所以需要持久化到磁盘中。刷盘的最终实现都是使用NIO中的 MappedByteBuffer.force() 将映射区的数据写入到磁盘，如果是同步刷盘的话，在Broker把消息写到CommitLog映射区后，就会等待写入完成。异步而言，只是唤醒对应的线程，不保证执行的时机，流程如图所示。
 消息过滤 类似于重复数据删除技术（Data Deduplication），可以在源端做，也可以在目的端实现，就是网络和存储的权衡，如果在Broker端做消息过滤就需要逐一比对consume queue 的 tagsCode 字段（hashcode）,如果符合则传输给消费者，因为是 hashcode，所以存在误判，需要在 Consumer 接收到消息后进行字符串级别的过滤，确保准确性。
 小结 这次代码阅读主要着眼于消息的发送过程和Broker上的存储，其他方面的细节有待深入。</description>
+    </item>
+    
+    <item>
+      <title>DispatcherServlet 源码阅读</title>
+      <link>http://vonzhou.com/2016/dispatcherservlet/</link>
+      <pubDate>Wed, 24 Aug 2016 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2016/dispatcherservlet/</guid>
+      <description>有时间还是应该多看看源码。
+DispatcherServlet 是一个实实在在的 Servlet，所以 Spring MVC 引入后不会改变 Servlet 容器的行为， 仍然是解析 web.xml 部署文件，只需要在里面配置这个 Servlet 即可。 比如下面配置 dispatcher Servlet 处理所有的请求，也体现了 DispatcherServlet 是前端控制器（Front Controller）。 contextConfigLocation 上下文参数用于配置路径的指定，如果没有的话就使用默认的值。
+&amp;lt;?xml version=&amp;quot;1.0&amp;quot; encoding=&amp;quot;UTF-8&amp;quot;?&amp;gt; &amp;lt;web-app xmlns=&amp;quot;http://java.sun.com/xml/ns/javaee&amp;quot; xmlns:xsi=&amp;quot;http://www.w3.org/2001/XMLSchema-instance&amp;quot; xsi:schemaLocation=&amp;quot;http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd&amp;quot; version=&amp;quot;3.0&amp;quot;&amp;gt; &amp;lt;servlet&amp;gt; &amp;lt;servlet-name&amp;gt;dispatcher&amp;lt;/servlet-name&amp;gt; &amp;lt;servlet-class&amp;gt;org.springframework.web.servlet.DispatcherServlet&amp;lt;/servlet-class&amp;gt; &amp;lt;load-on-startup&amp;gt;1&amp;lt;/load-on-startup&amp;gt; &amp;lt;/servlet&amp;gt; &amp;lt;servlet-mapping&amp;gt; &amp;lt;servlet-name&amp;gt;dispatcher&amp;lt;/servlet-name&amp;gt; &amp;lt;url-pattern&amp;gt;/&amp;lt;/url-pattern&amp;gt; &amp;lt;/servlet-mapping&amp;gt; &amp;lt;listener&amp;gt; &amp;lt;listener-class&amp;gt;org.springframework.web.context.ContextLoaderListener&amp;lt;/listener-class&amp;gt; &amp;lt;/listener&amp;gt; &amp;lt;context-param&amp;gt; &amp;lt;param-name&amp;gt;contextConfigLocation&amp;lt;/param-name&amp;gt; &amp;lt;param-value&amp;gt; /WEB-INF/dispatcher-servlet.xml classpath:service-context.xml &amp;lt;/param-value&amp;gt; &amp;lt;/context-param&amp;gt; &amp;lt;/web-app&amp;gt;  DispatcherServlet 初始化 DispatcherServlet 的父类 HttpServletBean 覆盖了 HttpServlet 的 init 方法，实现该 servlet 的初始化。
+/** * Map config parameters onto bean properties of this servlet, and * invoke subclass initialization.</description>
     </item>
     
     <item>
