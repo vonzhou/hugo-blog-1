@@ -99,6 +99,19 @@ G1收集器的Region，其他收集器新生代和老年代之间的对象引用
     </item>
     
     <item>
+      <title>InnoDB 行锁的实现</title>
+      <link>http://vonzhou.com/2019/innodb-row-lock/</link>
+      <pubDate>Sat, 16 Feb 2019 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2019/innodb-row-lock/</guid>
+      <description>InnoDB 实现行锁（row lock）的3种算法：
+ Record Lock：单行记录上锁 Gap Lock：间隙锁，锁定一个范围，不包括记录本身 Next-key Lock：等价于Gap Lock + Record Lock，即锁定一个范围同时锁定记录本身，为了解决Phantom Problem。  行加锁过程 InnoDB的行锁其实是索引记录锁，InnoDB存储引擎下每个表有一个主键（聚集索引），辅助索引中包含主键，根据查询使用的索引不同加锁也不同。
+ 通过主键加锁，仅对聚集索引记录进行加锁，Record Lock 通过辅助索引进行加锁，需要先对辅助索引加锁 Gap Lock，再对聚集索引加锁 Record Lock 当辅助索引是唯一索引的时候，Next-key Lock会降级为 Record Lock  实例 唯一索引行锁定 create table t (a int primary key); insert into t values(1),(2),(5);  会话A会对a=5的行进行X锁定，由于a是主键且唯一，所以只会对这一行进行锁定，所以在会话B中插入a=4不会阻塞。
+辅助索引行锁定 create table t2 (a int, b int, primary key(a), key(b)); insert into t2 values(1,1),(3,1),(5,3),(7,6),(10,8);  会话A对a=5的聚簇索引行加了Record Lock，所以会话B会阻塞。
+会话A不仅对a=5的聚簇索引行加了Record Lock，也会对辅助索引加 Next-Key Lock，锁定的范围是 (1,3],(3,6)。</description>
+    </item>
+    
+    <item>
       <title>为什么枚举是实现单例最好的方式？</title>
       <link>http://vonzhou.com/2019/enum-singleton/</link>
       <pubDate>Thu, 14 Feb 2019 00:00:00 +0000</pubDate>
@@ -122,6 +135,24 @@ public class Singleton3 { private static Singleton3 INSTANCE = null; private Sin
 采用的手动ACK。
 严重问题的出现 新版本发布之时，接到大量的报警异常，Consumer不停的进行Rebalance，不停的进行分区重分配，offset提交失败。
 2019-01-29 23:59:24 [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-kafka-consumer-1] ERROR o.a.k.c.c.i.ConsumerCoordinator.handle 550 - Error UNKNOWN_MEMBER_ID occurred while committing offsets for group xxxxx_group 2019-01-29 23:59:24 [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-kafka-consumer-1] ERROR o.a.k.c.c.i.ConsumerCoordinator.onJoinPrepare 254 - User provided listener org.springframework.kafka.listener.KafkaMessageListenerContainer$ListenerConsumer$1 failed on partition revocation: org.apache.kafka.clients.consumer.CommitFailedException: Commit cannot be completed due to group rebalance at org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$OffsetCommitResponseHandler.handle(ConsumerCoordinator.java:552) at org.apache.kafka.clients.consumer.internals.ConsumerCoordinator$OffsetCommitResponseHandler.handle(ConsumerCoordinator.java:493) at org.apache.kafka.clients.consumer.internals.AbstractCoordinator$CoordinatorResponseHandler.onSuccess(AbstractCoordinator.java:665) at org.apache.kafka.clients.consumer.internals.AbstractCoordinator$CoordinatorResponseHandler.onSuccess(AbstractCoordinator.java:644) at org.apache.kafka.clients.consumer.internals.RequestFuture$1.onSuccess(RequestFuture.java:167) at org.apache.kafka.clients.consumer.internals.RequestFuture.fireSuccess(RequestFuture.java:133) at org.apache.kafka.clients.consumer.internals.RequestFuture.complete(RequestFuture.java:107) at org.apache.kafka.clients.consumer.internals.ConsumerNetworkClient$RequestFutureCompletionHandler.onComplete(ConsumerNetworkClient.java:380) at org.apache.kafka.clients.NetworkClient.poll(NetworkClient.java:274) at org.apache.kafka.clients.consumer.internals.ConsumerNetworkClient.clientPoll(ConsumerNetworkClient.java:320) at org.apache.kafka.clients.consumer.internals.ConsumerNetworkClient.poll(ConsumerNetworkClient.java:213) at org.apache.kafka.clients.consumer.internals.ConsumerNetworkClient.poll(ConsumerNetworkClient.java:193) at org.</description>
+    </item>
+    
+    <item>
+      <title>Nginx后端响应不完整问题分析</title>
+      <link>http://vonzhou.com/2019/nginx-temp-file/</link>
+      <pubDate>Fri, 04 Jan 2019 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2019/nginx-temp-file/</guid>
+      <description> Nginx默认会开启proxy buffer，如果没有权限写临时文件，就会导致响应被截取。
+场景 实现了一个简单的文件存储服务器，可以上传，下载，为了使用简单，使用了Nginx配置了端口转发，这样访问时无需包含端口信息。
+wget http://10.240.208.36/api/v1/fileserv/download?objName=xxxxx.zip  但是今天在下载文件时发现了一个问题，一个40M的文件，下载后只有100K了，关键在于只要经过Nginx访问就不完整，直接访问后端接口就是OK的，那么问题应该出在Nginx的配置方面。
+在Nginx的错误日志中有如下的错误信息：
+2019/01/04 10:44:36 [crit] 14545#14545: *65 open() &amp;quot;/var/lib/nginx/proxy/5/00/0000000005&amp;quot; failed (13: Permission denied) while reading upstream, client: 10.240.208.36, server: _, request: &amp;quot;GET /api/v1/fileserv/download?objName=1546565995465_06a7c789611eb727cc95c529718e675e.apk HTTP/1.1&amp;quot;, upstream: &amp;quot;http://127.0.0.1:9197/api/v1/fileserv/download?objName=1546565995465_06a7c789611eb727cc95c529718e675e.apk&amp;quot;, host: &amp;quot;10.240.208.163&amp;quot;  启动Nginx的用户无权限写 /var/lib/nginx/proxy 目录，导致后续的内容无法返回，所以下载的文件不完整。
+原理 Nginx代理缓存（proxy_buffering）开启后（proxy_buffering on，默认是开启的），当Nginx从后端服务器收到响应后，该response的前面部分会缓存起来（可以通过proxy_buffer_size设置，默认是一个内存页大小，4K或者8K），如果buffer的大小无法容纳整个响应，剩下的部分会写到临时文件中，写临时文件可以通过选项 proxy_max_temp_file_size 和 proxy_temp_path控制，其中proxy_max_temp_file_size控制临时文件的最大大小，如果设置为0则不会写临时文件，proxy_temp_path设置临时文件的路径。
+解决方案 Nginx配置，设置一个Nginx用户有权访问的临时目录：
+proxy_temp_path /home/appops/nginx_proxy_temp 1 2;  也可以通过禁用掉代理响应缓存来处理这种情况：
+proxy_max_temp_file_size 0;  或者
+proxy_buffering off;  </description>
     </item>
     
     <item>

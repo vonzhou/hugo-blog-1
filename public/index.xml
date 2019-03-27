@@ -678,6 +678,68 @@ bool UseParallelOldGC                          = true                           
     </item>
     
     <item>
+      <title>InnoDB 行锁的实现</title>
+      <link>http://vonzhou.com/2019/innodb-row-lock/</link>
+      <pubDate>Sat, 16 Feb 2019 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2019/innodb-row-lock/</guid>
+      <description>
+
+&lt;p&gt;InnoDB 实现行锁（row lock）的3种算法：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;Record Lock&lt;/code&gt;：单行记录上锁&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;Gap Lock&lt;/code&gt;：间隙锁，锁定一个范围，不包括记录本身&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;Next-key Lock&lt;/code&gt;：等价于&lt;code&gt;Gap Lock&lt;/code&gt; + &lt;code&gt;Record Lock&lt;/code&gt;，即锁定一个范围同时锁定记录本身，为了解决Phantom Problem。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;行加锁过程&#34;&gt;行加锁过程&lt;/h2&gt;
+
+&lt;p&gt;InnoDB的行锁其实是索引记录锁，InnoDB存储引擎下每个表有一个主键（聚集索引），辅助索引中包含主键，根据查询使用的索引不同加锁也不同。&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;通过主键加锁，仅对聚集索引记录进行加锁，&lt;code&gt;Record Lock&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;通过辅助索引进行加锁，需要先对辅助索引加锁 &lt;code&gt;Gap Lock&lt;/code&gt;，再对聚集索引加锁 &lt;code&gt;Record Lock&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;当辅助索引是唯一索引的时候，&lt;code&gt;Next-key Lock&lt;/code&gt;会降级为 &lt;code&gt;Record Lock&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&#34;实例&#34;&gt;实例&lt;/h2&gt;
+
+&lt;h3 id=&#34;唯一索引行锁定&#34;&gt;唯一索引行锁定&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-sql&#34;&gt;create table t (a int primary key);
+insert into t values(1),(2),(5);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/innodb-row-lock-1.jpg&#34; alt=&#34;唯一索引行锁定&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;会话A会对a=5的行进行X锁定，由于a是主键且唯一，所以只会对这一行进行锁定，所以在会话B中插入a=4不会阻塞。&lt;/p&gt;
+
+&lt;h3 id=&#34;辅助索引行锁定&#34;&gt;辅助索引行锁定&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-sql&#34;&gt;create table t2 (a int, b int, primary key(a), key(b));
+insert into t2 values(1,1),(3,1),(5,3),(7,6),(10,8);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/innodb-row-lock-2.jpg&#34; alt=&#34;辅助索引行锁定-记录锁&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;会话A对a=5的聚簇索引行加了Record Lock，所以会话B会阻塞。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/innodb-row-lock-3.jpg&#34; alt=&#34;辅助索引行锁定-间隙锁&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;会话A不仅对a=5的聚簇索引行加了Record Lock，也会对辅助索引加 Next-Key Lock，锁定的范围是 (1,3],(3,6)。&lt;/p&gt;
+
+&lt;p&gt;所以在会话B中执行&lt;code&gt;insert into t2 values(13,3);&lt;/code&gt;, &lt;code&gt;insert into t2 values(14,5);&lt;/code&gt;也是同样的情况。&lt;/p&gt;
+
+&lt;p&gt;但是插入&lt;code&gt;b=0&lt;/code&gt;, &lt;code&gt;b=1&lt;/code&gt;, &lt;code&gt;b=5&lt;/code&gt;, &lt;code&gt;b=6&lt;/code&gt;时不会阻塞。&lt;/p&gt;
+
+&lt;h2 id=&#34;相关&#34;&gt;相关&lt;/h2&gt;
+
+&lt;p&gt;&lt;a href=&#34;https://dev.mysql.com/doc/refman/5.5/en/innodb-locking.html&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;14.10.1 InnoDB Locking&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
       <title>为什么枚举是实现单例最好的方式？</title>
       <link>http://vonzhou.com/2019/enum-singleton/</link>
       <pubDate>Thu, 14 Feb 2019 00:00:00 +0000</pubDate>
@@ -1318,6 +1380,59 @@ org.apache.kafka.clients.consumer.CommitFailedException: Commit cannot be comple
 &lt;li&gt;Kafka的参数常用的要知道，不要盲目设置&lt;/li&gt;
 &lt;li&gt;遇到问题无从下手的时候，看看源码，找到根源&lt;/li&gt;
 &lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Nginx后端响应不完整问题分析</title>
+      <link>http://vonzhou.com/2019/nginx-temp-file/</link>
+      <pubDate>Fri, 04 Jan 2019 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2019/nginx-temp-file/</guid>
+      <description>
+
+&lt;p&gt;Nginx默认会开启proxy buffer，如果没有权限写临时文件，就会导致响应被截取。&lt;/p&gt;
+
+&lt;h2 id=&#34;场景&#34;&gt;场景&lt;/h2&gt;
+
+&lt;p&gt;实现了一个简单的文件存储服务器，可以上传，下载，为了使用简单，使用了Nginx配置了端口转发，这样访问时无需包含端口信息。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;wget http://10.240.208.36/api/v1/fileserv/download?objName=xxxxx.zip
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;但是今天在下载文件时发现了一个问题，一个40M的文件，下载后只有100K了，关键在于只要经过Nginx访问就不完整，直接访问后端接口就是OK的，那么问题应该出在Nginx的配置方面。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;nginx-temp-file-1.png&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;在Nginx的错误日志中有如下的错误信息：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;2019/01/04 10:44:36 [crit] 14545#14545: *65 open() &amp;quot;/var/lib/nginx/proxy/5/00/0000000005&amp;quot; failed (13: Permission denied) while reading upstream, client: 10.240.208.36, server: _, request: &amp;quot;GET /api/v1/fileserv/download?objName=1546565995465_06a7c789611eb727cc95c529718e675e.apk HTTP/1.1&amp;quot;, upstream: &amp;quot;http://127.0.0.1:9197/api/v1/fileserv/download?objName=1546565995465_06a7c789611eb727cc95c529718e675e.apk&amp;quot;, host: &amp;quot;10.240.208.163&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;启动Nginx的用户无权限写 /var/lib/nginx/proxy 目录，导致后续的内容无法返回，所以下载的文件不完整。&lt;/p&gt;
+
+&lt;h2 id=&#34;原理&#34;&gt;原理&lt;/h2&gt;
+
+&lt;p&gt;Nginx代理缓存（&lt;a href=&#34;http://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_buffering&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;proxy_buffering&lt;/a&gt;）开启后（&lt;code&gt;proxy_buffering on&lt;/code&gt;，默认是开启的），当Nginx从后端服务器收到响应后，该response的前面部分会缓存起来（可以通过&lt;code&gt;proxy_buffer_size&lt;/code&gt;设置，默认是一个内存页大小，4K或者8K），如果buffer的大小无法容纳整个响应，剩下的部分会写到临时文件中，写临时文件可以通过选项 &lt;code&gt;proxy_max_temp_file_size&lt;/code&gt; 和 &lt;code&gt;proxy_temp_path&lt;/code&gt;控制，其中&lt;code&gt;proxy_max_temp_file_size&lt;/code&gt;控制临时文件的最大大小，如果设置为0则不会写临时文件，&lt;code&gt;proxy_temp_path&lt;/code&gt;设置临时文件的路径。&lt;/p&gt;
+
+&lt;h2 id=&#34;解决方案&#34;&gt;解决方案&lt;/h2&gt;
+
+&lt;p&gt;Nginx配置，设置一个Nginx用户有权访问的临时目录：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;proxy_temp_path /home/appops/nginx_proxy_temp 1 2;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&#34;nginx-temp-file-2.png&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;也可以通过禁用掉代理响应缓存来处理这种情况：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;proxy_max_temp_file_size 0;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;或者&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;proxy_buffering off;
+&lt;/code&gt;&lt;/pre&gt;
 </description>
     </item>
     
@@ -2084,804 +2199,6 @@ return new DefaultPooledObject&amp;lt;Jedis&amp;gt;(jedis);
 &lt;p&gt;所以在选用Disruptor的时候一定要具体的测试，搞清自己的场景，像本文中的一个生产者，多个消费者共同处理消息的场景使用普通的线程池+ABQ就足够了，并不比Disruptor表现差。&lt;/p&gt;
 
 &lt;p&gt;&lt;a href=&#34;https://github.com/vonzhou/learning-java/tree/master/src/framework/disruptor/threadpoolvsdisruptor&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;本文代码&lt;/a&gt;。&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Java字节码工具AsmTools介绍</title>
-      <link>http://vonzhou.com/2018/asmtools-intro/</link>
-      <pubDate>Tue, 27 Nov 2018 00:00:00 +0000</pubDate>
-      
-      <guid>http://vonzhou.com/2018/asmtools-intro/</guid>
-      <description>
-
-&lt;p&gt;AsmTools是一款字节码生成工具。 包括的组件：&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;jasm：由JASM格式得到class文件&lt;/li&gt;
-&lt;li&gt;jdis：把class文件转为JASM格式&lt;/li&gt;
-&lt;li&gt;jcoder：由JCOD格式得到class文件&lt;/li&gt;
-&lt;li&gt;jdec：把class文件转为JCOD格式&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;两种汇编器/反汇编器（assembler/disassemblers）对应的格式有啥区别？&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;JASM specifically focuses on representing byte-code instructions in the VM format (while providing minimal description of the structure of  the rest of the class file).  Generally, JASM is more convenient for semantic changes, like change to instruction flow.&lt;/p&gt;
-
-&lt;p&gt;JCOD provides good support for describing the structure of a class file (as well as writing incorrect bytes outside of this structure), and provides no support for specifying byte-code instructions (simply raw bytes for instructions).   JCOD is typically used for VMs to test Well-formedness of class files (eg extra or missing bytes), boundary issues, constant-pool coherence, constant-pool index coherence, attribute well-formedness, etc..&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;`&lt;/p&gt;
-
-&lt;p&gt;JASM比较贴近原始的字节码，和通过javap生成的字节码差不多，修改指令的语义也比较容易。
-JCOD更好的描述了class文件的结构信息。&lt;/p&gt;
-
-&lt;p&gt;接下来通过一个简单类直观感受下。&lt;/p&gt;
-
-&lt;h2 id=&#34;使用asmtools汇编-反汇编&#34;&gt;使用asmtools汇编/反汇编&lt;/h2&gt;
-
-&lt;p&gt;class文件转为JASM格式：&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;D:\dev\asmtools-7.0-build&amp;gt;javac Hello.java
-
-D:\dev\asmtools-7.0-build&amp;gt;java -jar asmtools.jar jdis Hello.class
-
-super public class Hello
-        version 52:0
-{
-
-
-public Method &amp;quot;&amp;lt;init&amp;gt;&amp;quot;:&amp;quot;()V&amp;quot;
-        stack 1 locals 1
-{
-                aload_0;
-                invokespecial   Method java/lang/Object.&amp;quot;&amp;lt;init&amp;gt;&amp;quot;:&amp;quot;()V&amp;quot;;
-                return;
-}
-
-public static Method main:&amp;quot;([Ljava/lang/String;)V&amp;quot;
-        stack 2 locals 1
-{
-                getstatic       Field java/lang/System.out:&amp;quot;Ljava/io/PrintStream;&amp;quot;;
-                ldc     String &amp;quot;Hello&amp;quot;;
-                invokevirtual   Method java/io/PrintStream.println:&amp;quot;(Ljava/lang/String;)V&amp;quot;;
-                return;
-}
-
-} // end Class Hello
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;使用javap得到的反汇编结果：&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;D:\dev\asmtools-7.0-build&amp;gt;javap -c Hello.class
-Compiled from &amp;quot;Hello.java&amp;quot;
-public class Hello {
-  public Hello();
-    Code:
-       0: aload_0
-       1: invokespecial #1                  // Method java/lang/Object.&amp;quot;&amp;lt;init&amp;gt;&amp;quot;:()V
-       4: return
-
-  public static void main(java.lang.String[]);
-    Code:
-       0: getstatic     #2                  // Field java/lang/System.out:Ljava/io/PrintStream;
-       3: ldc           #3                  // String Hello
-       5: invokevirtual #4                  // Method java/io/PrintStream.println:(Ljava/lang/String;)V
-       8: return
-}
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;class文件转为JCOD格式：&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;D:\dev\asmtools-7.0-build&amp;gt;java -jar asmtools.jar jdec Hello.class
-class Hello {
-  0xCAFEBABE;
-  0; // minor version
-  52; // version
-  [] { // Constant Pool
-    ; // first element is empty
-    Method #6 #15; // #1
-    Field #16 #17; // #2
-    String #18; // #3
-    Method #19 #20; // #4
-    class #18; // #5
-    class #21; // #6
-    Utf8 &amp;quot;&amp;lt;init&amp;gt;&amp;quot;; // #7
-    Utf8 &amp;quot;()V&amp;quot;; // #8
-    Utf8 &amp;quot;Code&amp;quot;; // #9
-    Utf8 &amp;quot;LineNumberTable&amp;quot;; // #10
-    Utf8 &amp;quot;main&amp;quot;; // #11
-    Utf8 &amp;quot;([Ljava/lang/String;)V&amp;quot;; // #12
-    Utf8 &amp;quot;SourceFile&amp;quot;; // #13
-    Utf8 &amp;quot;Hello.java&amp;quot;; // #14
-    NameAndType #7 #8; // #15
-    class #22; // #16
-    NameAndType #23 #24; // #17
-    Utf8 &amp;quot;Hello&amp;quot;; // #18
-    class #25; // #19
-    NameAndType #26 #27; // #20
-    Utf8 &amp;quot;java/lang/Object&amp;quot;; // #21
-    Utf8 &amp;quot;java/lang/System&amp;quot;; // #22
-    Utf8 &amp;quot;out&amp;quot;; // #23
-    Utf8 &amp;quot;Ljava/io/PrintStream;&amp;quot;; // #24
-    Utf8 &amp;quot;java/io/PrintStream&amp;quot;; // #25
-    Utf8 &amp;quot;println&amp;quot;; // #26
-    Utf8 &amp;quot;(Ljava/lang/String;)V&amp;quot;; // #27
-  } // Constant Pool
-
-  0x0021; // access
-  #5;// this_cpx
-  #6;// super_cpx
-
-  [] { // Interfaces
-  } // Interfaces
-
-  [] { // fields
-  } // fields
-
-  [] { // methods
-    { // Member
-      0x0001; // access
-      #7; // name_cpx
-      #8; // sig_cpx
-      [] { // Attributes
-        Attr(#9) { // Code
-          1; // max_stack
-          1; // max_locals
-          Bytes[]{
-            0x2AB70001B1;
-          }
-          [] { // Traps
-          } // end Traps
-          [] { // Attributes
-            Attr(#10) { // LineNumberTable
-              [] { // LineNumberTable
-                0  1;
-              }
-            } // end LineNumberTable
-          } // Attributes
-        } // end Code
-      } // Attributes
-    } // Member
-    ;
-    { // Member
-      0x0009; // access
-      #11; // name_cpx
-      #12; // sig_cpx
-      [] { // Attributes
-        Attr(#9) { // Code
-          2; // max_stack
-          1; // max_locals
-          Bytes[]{
-            0xB200021203B60004;
-            0xB1;
-          }
-          [] { // Traps
-          } // end Traps
-          [] { // Attributes
-            Attr(#10) { // LineNumberTable
-              [] { // LineNumberTable
-                0  3;
-                8  4;
-              }
-            } // end LineNumberTable
-          } // Attributes
-        } // end Code
-      } // Attributes
-    } // Member
-  } // methods
-
-  [] { // Attributes
-    Attr(#13) { // SourceFile
-      #14;
-    } // end SourceFile
-  } // Attributes
-} // end class Hello
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;从jasm，jcod格式生成class文件：&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;D:\dev\asmtools-7.0-build&amp;gt;java -jar asmtools.jar jcoder Hello.jcod
-
-D:\dev\asmtools-7.0-build&amp;gt;java -jar asmtools.jar jcoder Hello.jcod
-
-D:\dev\asmtools-7.0-build&amp;gt;java Hello
-Hello
-
-D:\dev\asmtools-7.0-build&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h2 id=&#34;修改字节码&#34;&gt;修改字节码&lt;/h2&gt;
-
-&lt;p&gt;接下来展示一个使用asmtools修改字节码的例子。原始类：&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;public class Foo {
-  static boolean bv;
-  public static void main(String[] args) {
-    bv = true;
-    if (bv) {
-      System.out.println(&amp;quot;Hello, Java!&amp;quot;);
-    }
-    if (bv == true){
-      System.out.println(&amp;quot;Hello, JVM!&amp;quot;);
-    } 
-  }
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;运行后输出：&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;Hello, Java!
-Hello, JVM!
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;对应的JASM格式反汇编内容：&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;super public class Foo
-    version 52:0
-{
-
-static Field bv:Z;
-
-public Method &amp;quot;&amp;lt;init&amp;gt;&amp;quot;:&amp;quot;()V&amp;quot;
-    stack 1 locals 1
-{
-        aload_0;
-        invokespecial   Method java/lang/Object.&amp;quot;&amp;lt;init&amp;gt;&amp;quot;:&amp;quot;()V&amp;quot;;
-        return;
-}
-
-public static Method main:&amp;quot;([Ljava/lang/String;)V&amp;quot;
-    stack 2 locals 1
-{
-        iconst_1;  # 入栈常量1
-        putstatic   Field bv:&amp;quot;Z&amp;quot;;
-        getstatic   Field bv:&amp;quot;Z&amp;quot;;
-        ifeq    L18; 
-        getstatic   Field java/lang/System.out:&amp;quot;Ljava/io/PrintStream;&amp;quot;;
-        ldc String &amp;quot;Hello, Java!&amp;quot;;
-        invokevirtual   Method java/io/PrintStream.println:&amp;quot;(Ljava/lang/String;)V&amp;quot;;
-    L18:    stack_frame_type same;
-        getstatic   Field bv:&amp;quot;Z&amp;quot;;
-        iconst_1;
-        if_icmpne   L33;  # 比较
-        getstatic   Field java/lang/System.out:&amp;quot;Ljava/io/PrintStream;&amp;quot;;
-        ldc String &amp;quot;Hello, JVM!&amp;quot;;
-        invokevirtual   Method java/io/PrintStream.println:&amp;quot;(Ljava/lang/String;)V&amp;quot;;
-    L33:    stack_frame_type same;
-        return;
-}
-
-} // end Class Foo
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;可以从中看到java中的true在字节码层面使用的int 1表示的。&lt;/p&gt;
-
-&lt;p&gt;如果修改下Foo.jasm。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;super public class Foo
-    version 52:0
-{
-
-static Field bv:Z;
-
-public Method &amp;quot;&amp;lt;init&amp;gt;&amp;quot;:&amp;quot;()V&amp;quot;
-    stack 1 locals 1
-{
-        aload_0;
-        invokespecial   Method java/lang/Object.&amp;quot;&amp;lt;init&amp;gt;&amp;quot;:&amp;quot;()V&amp;quot;;
-        return;
-}
-
-public static Method main:&amp;quot;([Ljava/lang/String;)V&amp;quot;
-    stack 2 locals 1
-{
-        iconst_1;
-        putstatic   Field bv:&amp;quot;Z&amp;quot;;
-        getstatic   Field bv:&amp;quot;Z&amp;quot;;
-        ifeq    L18;
-        getstatic   Field java/lang/System.out:&amp;quot;Ljava/io/PrintStream;&amp;quot;;
-        ldc String &amp;quot;Hello, Java!&amp;quot;;
-        invokevirtual   Method java/io/PrintStream.println:&amp;quot;(Ljava/lang/String;)V&amp;quot;;
-    L18:    stack_frame_type same;
-        getstatic   Field bv:&amp;quot;Z&amp;quot;;
-        iconst_2;  # 修改了这里
-        if_icmpne   L33;
-        getstatic   Field java/lang/System.out:&amp;quot;Ljava/io/PrintStream;&amp;quot;;
-        ldc String &amp;quot;Hello, JVM!&amp;quot;;
-        invokevirtual   Method java/io/PrintStream.println:&amp;quot;(Ljava/lang/String;)V&amp;quot;;
-    L33:    stack_frame_type same;
-        return;
-}
-
-} // end Class Foo
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;把第二个iconst_1修改为iconst_2也就是把 1 和2比较，会得到下面的输出：&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;$ java -jar  asmtools.jar jasm Foo.jasm &amp;gt; Foo.class
-
-$ java Foo
-Hello, Java!
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h2 id=&#34;相关阅读&#34;&gt;相关阅读&lt;/h2&gt;
-
-&lt;p&gt;&lt;a href=&#34;https://zhuanlan.zhihu.com/p/23068093&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;Java Class文件结构分析&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;a href=&#34;https://wiki.openjdk.java.net/display/CodeTools/asmtools&#34; rel=&#34;nofollow noreferrer&#34; target=&#34;_blank&#34;&gt;AsmTools&lt;/a&gt;&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>深入理解条件变量 Condition</title>
-      <link>http://vonzhou.com/2018/java-condition/</link>
-      <pubDate>Sun, 11 Nov 2018 00:00:00 +0000</pubDate>
-      
-      <guid>http://vonzhou.com/2018/java-condition/</guid>
-      <description>
-
-&lt;h2 id=&#34;序&#34;&gt;序&lt;/h2&gt;
-
-&lt;p&gt;可重入锁（&lt;code&gt;ReentrantLock&lt;/code&gt;）是 &lt;code&gt;synchronized&lt;/code&gt; 关键字的扩展，更加灵活。还有一种&lt;code&gt;ReentrantLock&lt;/code&gt;应用场景是和&lt;code&gt;Condition&lt;/code&gt;搭配使用，实现多线程环境下等待状态条件的功能。&lt;code&gt;Object.wait&lt;/code&gt; 和 &lt;code&gt;Object.notify&lt;/code&gt; 是和 &lt;code&gt;synchronized&lt;/code&gt; 配合使用的，条件变量&lt;code&gt;Condition&lt;/code&gt;是和&lt;code&gt;ReentrantLock&lt;/code&gt;相关联的。&lt;/p&gt;
-
-&lt;p&gt;接下来先通过一个Demo看看&lt;code&gt;Condition&lt;/code&gt;的用法，然后列举两个应用的地方，最后分析其源码实现。&lt;/p&gt;
-
-&lt;h2 id=&#34;一个简单demo&#34;&gt;一个简单Demo&lt;/h2&gt;
-
-&lt;p&gt;先通过一个Demo看看怎么使用&lt;code&gt;Condition&lt;/code&gt;，主线程通知条件满足，通过另一个线程继续运行，可以看到的是&lt;code&gt;Condition.wait/signal&lt;/code&gt;方法需要和一个&lt;code&gt;ReentrantLock&lt;/code&gt;绑定。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class ReenterLockCondition implements Runnable {
-    public static ReentrantLock lock = new ReentrantLock();
-    public static Condition condition = lock.newCondition();
-
-    @Override
-    public void run() {
-        try {
-            lock.lock();
-            condition.await();
-            System.out.println(String.format(&amp;quot;条件满足，线程%s运行！&amp;quot;, Thread.currentThread().getName()));
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            lock.unlock();
-        }
-
-    }
-
-    public static void main(String args[]) throws InterruptedException {
-        ReenterLockCondition reenterLockCondition = new ReenterLockCondition();
-        Thread thread1 = new Thread(reenterLockCondition);
-        thread1.setName(&amp;quot;T1&amp;quot;);
-        thread1.start();
-        Thread.sleep(2000);
-        System.out.println(&amp;quot;通知T1条件满足&amp;quot;);
-        lock.lock();
-        condition.signal();
-        lock.unlock();
-    }
-}
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h2 id=&#34;应用举例-jdk-arrayblockingqueue&#34;&gt;应用举例：JDK ArrayBlockingQueue&lt;/h2&gt;
-
-&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/java-condition-1.jpg&#34; alt=&#34;ArrayBlockingQueue类图&#34; /&gt;&lt;/p&gt;
-
-&lt;p&gt;JDK并发包中的 &lt;code&gt;ArrayBlockingQueue&lt;/code&gt; 就使用了&lt;code&gt;Condition&lt;/code&gt;来同步队列的空/满状态。先看条件变量的定义：&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;/** Main lock guarding all access */
-final ReentrantLock lock;
-
-/** Condition for waiting takes */
-private final Condition notEmpty;
-
-/** Condition for waiting puts */
-private final Condition notFull;
-
-public ArrayBlockingQueue(int capacity, boolean fair) {
-    if (capacity &amp;lt;= 0)
-        throw new IllegalArgumentException();
-    this.items = new Object[capacity];
-    lock = new ReentrantLock(fair);
-    notEmpty = lock.newCondition();
-    notFull =  lock.newCondition();
-}
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;&lt;code&gt;ArrayBlockingQueue&lt;/code&gt; 构造的时候初始化了2个条件变量：非空，非满，他们都是和同一个重入锁关联的。&lt;/p&gt;
-
-&lt;p&gt;元素入队的时候，如果队列一直满的话就一直阻塞等待非满条件为真，否则的话就插入对应的元素，并且通知非空条件为真。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public void put(E e) throws InterruptedException {
-    checkNotNull(e);
-    final ReentrantLock lock = this.lock;
-    lock.lockInterruptibly();
-    try {
-        while (count == items.length)
-            notFull.await();
-        enqueue(e);
-    } finally {
-        lock.unlock();
-    }
-}
-
-private void enqueue(E x) {
-    // assert lock.getHoldCount() == 1;
-    // assert items[putIndex] == null;
-    final Object[] items = this.items;
-    items[putIndex] = x;
-    if (++putIndex == items.length)
-        putIndex = 0;
-    count++;
-    notEmpty.signal();
-}
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;同样的，出队的时候，如果队列没有元素就等待非空的条件为真，否则出队，并通知非满条件为真。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public E take() throws InterruptedException {
-    final ReentrantLock lock = this.lock;
-    lock.lockInterruptibly();
-    try {
-        while (count == 0)
-            notEmpty.await();
-        return dequeue();
-    } finally {
-        lock.unlock();
-    }
-}
-
-private E dequeue() {
-    // assert lock.getHoldCount() == 1;
-    // assert items[takeIndex] != null;
-    final Object[] items = this.items;
-    @SuppressWarnings(&amp;quot;unchecked&amp;quot;)
-    E x = (E) items[takeIndex];
-    items[takeIndex] = null;
-    if (++takeIndex == items.length)
-        takeIndex = 0;
-    count--;
-    if (itrs != null)
-        itrs.elementDequeued();
-    notFull.signal();
-    return x;
-}
-    
-    
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h2 id=&#34;应用举例-kafaka-bufferpool&#34;&gt;应用举例：Kafaka BufferPool&lt;/h2&gt;
-
-&lt;p&gt;&lt;code&gt;KafkaProducer&lt;/code&gt;里面有一个buffer pool的概念，&lt;code&gt;BufferPool&lt;/code&gt;里面内存分配，回收过程也有用到条件变量。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public ByteBuffer allocate(int size, long maxTimeToBlockMs) throws InterruptedException {
-    this.lock.lock();
-    try {
-        // check if we have a free buffer of the right size pooled
-        if (size == poolableSize &amp;amp;&amp;amp; !this.free.isEmpty())
-            return this.free.pollFirst();
-
-        // now check if the request is immediately satisfiable with the
-        // memory on hand or if we need to block
-        int freeListSize = this.free.size() * this.poolableSize;
-        if (this.availableMemory + freeListSize &amp;gt;= size) {
-            // 不断释放free队列中的buffer，直到可用内存&amp;gt;size
-            // we have enough unallocated or pooled memory to immediately
-            // satisfy the request
-            freeUp(size);
-            this.availableMemory -= size;
-            lock.unlock();
-            // 使用的不是free队列中的buffer，而是直接分配HeapByteBuffer
-            return ByteBuffer.allocate(size);
-        } else {
-            // 没有足够空间，阻塞
-            // we are out of memory and will have to block
-            int accumulated = 0;
-            ByteBuffer buffer = null;
-            Condition moreMemory = this.lock.newCondition();
-            long remainingTimeToBlockNs = TimeUnit.MILLISECONDS.toNanos(maxTimeToBlockMs);
-            this.waiters.addLast(moreMemory);
-            // loop over and over until we have a buffer or have reserved
-            // enough memory to allocate one
-            while (accumulated &amp;lt; size) {
-                long startWaitNs = time.nanoseconds();
-                long timeNs;
-                boolean waitingTimeElapsed;
-                try {
-                    waitingTimeElapsed = !moreMemory.await(remainingTimeToBlockNs, TimeUnit.NANOSECONDS);
-                } catch (InterruptedException e) {
-                    this.waiters.remove(moreMemory);
-                    throw e;
-                } finally {
-                    long endWaitNs = time.nanoseconds();
-                    timeNs = Math.max(0L, endWaitNs - startWaitNs);
-                    this.waitTime.record(timeNs, time.milliseconds());
-                }
-
-                if (waitingTimeElapsed) {
-                    this.waiters.remove(moreMemory);
-                    throw new TimeoutException(&amp;quot;Failed to allocate memory within the configured max blocking time &amp;quot; + maxTimeToBlockMs + &amp;quot; ms.&amp;quot;);
-                }
-
-                remainingTimeToBlockNs -= timeNs;
-                // check if we can satisfy this request from the free list,
-                // otherwise allocate memory
-                if (accumulated == 0 &amp;amp;&amp;amp; size == this.poolableSize &amp;amp;&amp;amp; !this.free.isEmpty()) {
-                    // just grab a buffer from the free list
-                    buffer = this.free.pollFirst();
-                    accumulated = size;
-                } else {
-                    // 先分配一部分空间
-                    // we&#39;ll need to allocate memory, but we may only get
-                    // part of what we need on this iteration
-                    freeUp(size - accumulated);
-                    int got = (int) Math.min(size - accumulated, this.availableMemory);
-                    this.availableMemory -= got;
-                    accumulated += got;
-                }
-            }
-
-            // 成功分配空间后，移除条件变量
-            // remove the condition for this thread to let the next thread
-            // in line start getting memory
-            Condition removed = this.waiters.removeFirst();
-            if (removed != moreMemory)
-                throw new IllegalStateException(&amp;quot;Wrong condition: this shouldn&#39;t happen.&amp;quot;);
-
-            // 如果还有剩余空间，还有等待线程，则唤醒
-            // signal any additional waiters if there is more memory left
-            // over for them
-            if (this.availableMemory &amp;gt; 0 || !this.free.isEmpty()) {
-                if (!this.waiters.isEmpty())
-                    this.waiters.peekFirst().signal();
-            }
-
-            // unlock and return the buffer
-            lock.unlock();
-            if (buffer == null)
-                return ByteBuffer.allocate(size);
-            else
-                return buffer;
-        }
-    } finally {
-        if (lock.isHeldByCurrentThread())
-            lock.unlock();
-    }
-}
-    
-public void deallocate(ByteBuffer buffer, int size) {
-    lock.lock();
-    try {
-        // 如果是poolableSize大小的buffer，则入free队列管理
-        if (size == this.poolableSize &amp;amp;&amp;amp; size == buffer.capacity()) {
-            buffer.clear();
-            this.free.add(buffer);
-        } else {
-            // 否则直接增加大小，分配的buffer由GC回收
-            this.availableMemory += size;
-        }
-
-        // 唤醒一个因内存分配得不到满足而阻塞的线程
-        Condition moreMem = this.waiters.peekFirst();
-        if (moreMem != null)
-            moreMem.signal();
-    } finally {
-        lock.unlock();
-    }
-}    
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h2 id=&#34;condition-实现分析&#34;&gt;Condition 实现分析&lt;/h2&gt;
-
-&lt;p&gt;接下来看看条件变量是怎么实现的？可重入锁关联的条件变量实现类是AQS内部类&lt;code&gt;ConditionObject&lt;/code&gt;，接下来通过其中的await和signal方法的源码看看&lt;code&gt;Condition&lt;/code&gt;的实现。&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/ConditionObject.png&#34; alt=&#34;ConditionObject类结构&#34; /&gt;&lt;/p&gt;
-
-&lt;h3 id=&#34;await&#34;&gt;await&lt;/h3&gt;
-
-&lt;p&gt;调用 Condition.await 方法前需要拥有锁，await 会释放锁&lt;code&gt;fullyRelease&lt;/code&gt;。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public final void await() throws InterruptedException {
-    if (Thread.interrupted())
-        throw new InterruptedException();
-    Node node = addConditionWaiter();
-    
-    // 释放关联的锁
-    int savedState = fullyRelease(node);
-    int interruptMode = 0;
-    
-    // 如果该节点没有放入同步队列(sync queue)，则阻塞等待
-    while (!isOnSyncQueue(node)) {
-        LockSupport.park(this);
-        if ((interruptMode = checkInterruptWhileWaiting(node)) != 0)
-            break;
-    }
-    
-    // 节点进入了同步队列，则争用锁，锁获取成功后，await就退出了
-    if (acquireQueued(node, savedState) &amp;amp;&amp;amp; interruptMode != THROW_IE)
-        interruptMode = REINTERRUPT;
-    if (node.nextWaiter != null) // clean up if cancelled
-        unlinkCancelledWaiters();
-    if (interruptMode != 0)
-        reportInterruptAfterWait(interruptMode);
-}
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h3 id=&#34;条件队列&#34;&gt;条件队列&lt;/h3&gt;
-
-&lt;p&gt;将当前线程加入到条件等待队列。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;// 新增一个条件节点
-private Node addConditionWaiter() {
-    Node t = lastWaiter;
-    // If lastWaiter is cancelled, clean out.
-    if (t != null &amp;amp;&amp;amp; t.waitStatus != Node.CONDITION) {
-        unlinkCancelledWaiters();
-        t = lastWaiter;
-    }
-    Node node = new Node(Thread.currentThread(), Node.CONDITION);
-    if (t == null)
-        firstWaiter = node;
-    else
-        t.nextWaiter = node;
-    lastWaiter = node;
-    return node;
-}
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h3 id=&#34;锁释放&#34;&gt;锁释放&lt;/h3&gt;
-
-&lt;p&gt;AQS的方法。&lt;code&gt;getState()&lt;/code&gt;方法获取的就是AQS里面的state变量，在&lt;code&gt;ReentrantLock&lt;/code&gt;中，其实state保存的是重入的次数（参考《可重入锁ReentrantLock源码阅读》）。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;final int fullyRelease(Node node) {
-    boolean failed = true;
-    try {
-        int savedState = getState();
-        if (release(savedState)) {
-            failed = false;
-            return savedState;
-        } else {
-            throw new IllegalMonitorStateException();
-        }
-    } finally {
-        if (failed)
-            node.waitStatus = Node.CANCELLED;
-    }
-}
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;&lt;code&gt;ReentrantLock.Sync.tryRelease&lt;/code&gt;的实现如下，可以看到不管重入了多少次都会一次性释放。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;protected final boolean tryRelease(int releases) {
-    int c = getState() - releases;
-    if (Thread.currentThread() != getExclusiveOwnerThread())
-        throw new IllegalMonitorStateException();
-    boolean free = false;
-    if (c == 0) {
-        free = true;
-        setExclusiveOwnerThread(null);
-    }
-    setState(c);
-    return free;
-}
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;&lt;code&gt;fullyRelease&lt;/code&gt;返回之前的重入次数，后续会用到。&lt;/p&gt;
-
-&lt;h3 id=&#34;阻塞等待条件满足&#34;&gt;阻塞等待条件满足&lt;/h3&gt;
-
-&lt;p&gt;await 释放锁后进入阻塞等待状态，阻塞的条件是该节点没有在SyncQueue上：&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;final boolean isOnSyncQueue(Node node) {
-    if (node.waitStatus == Node.CONDITION || node.prev == null)
-        return false;
-    if (node.next != null) // If has successor, it must be on queue
-        return true;
-    /*
-     * node.prev can be non-null, but not yet on queue because
-     * the CAS to place it on queue can fail. So we have to
-     * traverse from tail to make sure it actually made it.  It
-     * will always be near the tail in calls to this method, and
-     * unless the CAS failed (which is unlikely), it will be
-     * there, so we hardly ever traverse much.
-     */
-    return findNodeFromTail(node);
-}
-``
-
-signal的时候该方法会返回true。
-
-### 重获锁
-
-条件满足后，需要重新获取锁，acquireQueued会调到ReentrantLock.tryAcquire，此处可以看到保存前面`savedState`的作用。
-
-### signal
-
-唤醒就是把等待队列中的第一个节点转移到同步队列。
-
-​```java
-public final void signal() {
-    // 先判断当前线程是否获取了锁，否则异常
-    if (!isHeldExclusively())
-        throw new IllegalMonitorStateException();
-    Node first = firstWaiter;
-    if (first != null)
-        doSignal(first);
-}
-
-// 摘除头节点，把头节点移到同步队列
-private void doSignal(Node first) {
-    do {
-        if ( (firstWaiter = first.nextWaiter) == null)
-            lastWaiter = null;
-        first.nextWaiter = null;
-    } while (!transferForSignal(first) &amp;amp;&amp;amp;
-             (first = firstWaiter) != null);
-}
-
-final boolean transferForSignal(Node node) {
-     // CAS 将状态设置为0,0是一个无效的状态
-    if (!compareAndSetWaitStatus(node, Node.CONDITION, 0))
-        return false;
-
-    /*
-     * Splice onto queue and try to set waitStatus of predecessor to
-     * indicate that thread is (probably) waiting. If cancelled or
-     * attempt to set waitStatus fails, wake up to resync (in which
-     * case the waitStatus can be transiently and harmlessly wrong).
-     */
-    Node p = enq(node);
-    int ws = p.waitStatus;
-    
-    // 唤醒线程
-    if (ws &amp;gt; 0 || !compareAndSetWaitStatus(p, ws, Node.SIGNAL))
-        LockSupport.unpark(node.thread);
-    return true;
-}
-
-// 这个方法是AQS中的，node进入同步队列
-private Node enq(final Node node) {
-    for (;;) {
-        Node t = tail;
-        if (t == null) { // Must initialize
-            if (compareAndSetHead(new Node()))
-                tail = head;
-        } else {
-            node.prev = t;
-            if (compareAndSetTail(t, node)) {
-                t.next = node;
-                return t;
-            }
-        }
-    }
-}
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h3 id=&#34;signalall&#34;&gt;signalAll&lt;/h3&gt;
-
-&lt;p&gt;转移所有的等待节点。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private void doSignalAll(Node first) {
-    lastWaiter = firstWaiter = null;
-    do {
-        Node next = first.nextWaiter;
-        first.nextWaiter = null;
-        transferForSignal(first);
-        first = next;
-    } while (first != null);
-}
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h2 id=&#34;linux环境下的条件变量&#34;&gt;Linux环境下的条件变量&lt;/h2&gt;
-
-&lt;p&gt;了解Linux环境编程的会想到其中也有条件变量的机制来实现线程之间的同步，和Java中的基本上语义是相同的，在等待条件的时候都会原子的释放锁。&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/java-condition-3.jpg&#34; alt=&#34;pthread_wait&#34; /&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&#34;http://vonzhou.com/images/java-condition-4.jpg&#34; alt=&#34;pthread_signal&#34; /&gt;&lt;/p&gt;
 </description>
     </item>
     
