@@ -21,6 +21,30 @@
     </item>
     
     <item>
+      <title>Spring 中如何控制2个bean中的初始化顺序？</title>
+      <link>http://vonzhou.com/2017/spring-two-bean-init-order-control/</link>
+      <pubDate>Tue, 17 Oct 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2017/spring-two-bean-init-order-control/</guid>
+      <description>开发过程中有这样一个场景，2个 bean 初始化逻辑中有依赖关系，需要控制二者的初始化顺序。实现方式可以有多种，本文结合目前对 Spring 的理解，尝试列出几种思路。
+场景 假设A，B两个 bean 都需要在初始化的时候从本地磁盘读取文件，其中B加载的文件，依赖A中加载的全局配置文件中配置的路径，所以需要A先于B初始化，此外A中的配置改变后也需要触发B的重新加载逻辑，所以A，B需要注入彼此。
+对于下面的模型，问题简化为：我们需要initA()先于initB()得到执行。
+@Service public class A { @Autowired private B b; public A() { System.out.println(&amp;quot;A construct&amp;quot;); } @PostConstruct public void init() { initA(); } private void initA() { System.out.println(&amp;quot;A init&amp;quot;); } } @Service public class B { @Autowired private A a; public B() { System.out.println(&amp;quot;B construct&amp;quot;); } @PostConstruct public void init() { initB(); } private void initB(){ System.out.println(&amp;quot;B init&amp;quot;); } }  方案一：立Flag 我们可以在业务层自己控制A，B的初始化顺序，在A中设置一个“是否初始化的”标记，B初始化前检测A是否得以初始化，如果没有则调用A的初始化方法，所谓的check-and-act。对于上述模型，实现如下：</description>
+    </item>
+    
+    <item>
+      <title>ExceptionHandler 异常处理过程分析</title>
+      <link>http://vonzhou.com/2017/spring-exception-handler/</link>
+      <pubDate>Thu, 10 Aug 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2017/spring-exception-handler/</guid>
+      <description>ExceptionHandler 的使用场景就是在 Controller 中捕获异常，全局统一处理，而不是在每个 handler 中都进行繁琐的异常捕获操作，优点就是代码整洁。
+ExceptionHandler 异常处理过程大体为：执行 handler 方法如果抛出了异常，就根据异常类型查找到对应的异常处理方法，然后执行对应的方法，上图展示了这一过程。下面列出异常处理方法解析的过程。
+getExceptionHandlerMethod 根据特定的异常找到匹配的 @ExceptionHandler 方法，这里只关注在 Controller 查找有 ExceptionHandler 方法的路径，先忽略 ControllerAdvice 的情况。通过如下代码可以看到，对于每一个 handler 都有一个异常处理器缓存（exceptionHandlerCache），局部性原理。初次会进行 ExceptionHandlerMethodResolver 的构造，获取到 ExceptionHandlerMethodResolver 之后，根据异常获取到响应的方法，包装成一个 InvocableHandlerMethod 返回。
+protected ServletInvocableHandlerMethod getExceptionHandlerMethod(HandlerMethod handlerMethod, Exception exception) { Class&amp;lt;?&amp;gt; handlerType = (handlerMethod != null ? handlerMethod.getBeanType() : null); if (handlerMethod != null) { ExceptionHandlerMethodResolver resolver = this.exceptionHandlerCache.get(handlerType); // 关键点1 if (resolver == null) { resolver = new ExceptionHandlerMethodResolver(handlerType); // 关键点2 this.exceptionHandlerCache.put(handlerType, resolver); } Method method = resolver.</description>
+    </item>
+    
+    <item>
       <title>Spring源码阅读 - bean实例化浅析</title>
       <link>http://vonzhou.com/2016/spring-bean-instantiation/</link>
       <pubDate>Fri, 02 Sep 2016 00:00:00 +0000</pubDate>

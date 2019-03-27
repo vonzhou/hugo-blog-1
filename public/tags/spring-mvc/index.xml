@@ -6,10 +6,22 @@
     <description>Recent content in Spring MVC on 编程之路</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Wed, 24 Aug 2016 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Thu, 10 Aug 2017 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="http://vonzhou.com/tags/spring-mvc/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>ExceptionHandler 异常处理过程分析</title>
+      <link>http://vonzhou.com/2017/spring-exception-handler/</link>
+      <pubDate>Thu, 10 Aug 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://vonzhou.com/2017/spring-exception-handler/</guid>
+      <description>ExceptionHandler 的使用场景就是在 Controller 中捕获异常，全局统一处理，而不是在每个 handler 中都进行繁琐的异常捕获操作，优点就是代码整洁。
+ExceptionHandler 异常处理过程大体为：执行 handler 方法如果抛出了异常，就根据异常类型查找到对应的异常处理方法，然后执行对应的方法，上图展示了这一过程。下面列出异常处理方法解析的过程。
+getExceptionHandlerMethod 根据特定的异常找到匹配的 @ExceptionHandler 方法，这里只关注在 Controller 查找有 ExceptionHandler 方法的路径，先忽略 ControllerAdvice 的情况。通过如下代码可以看到，对于每一个 handler 都有一个异常处理器缓存（exceptionHandlerCache），局部性原理。初次会进行 ExceptionHandlerMethodResolver 的构造，获取到 ExceptionHandlerMethodResolver 之后，根据异常获取到响应的方法，包装成一个 InvocableHandlerMethod 返回。
+protected ServletInvocableHandlerMethod getExceptionHandlerMethod(HandlerMethod handlerMethod, Exception exception) { Class&amp;lt;?&amp;gt; handlerType = (handlerMethod != null ? handlerMethod.getBeanType() : null); if (handlerMethod != null) { ExceptionHandlerMethodResolver resolver = this.exceptionHandlerCache.get(handlerType); // 关键点1 if (resolver == null) { resolver = new ExceptionHandlerMethodResolver(handlerType); // 关键点2 this.exceptionHandlerCache.put(handlerType, resolver); } Method method = resolver.</description>
+    </item>
     
     <item>
       <title>DispatcherServlet 源码阅读</title>
